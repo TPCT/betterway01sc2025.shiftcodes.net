@@ -1,0 +1,2 @@
+[26-Sep-2024 17:17:58 Africa/Cairo] PHP Fatal error:  Cannot redeclare App\V1\Client\Client::position() in /home/nfcads/public_html/backend/app/V1/Client/Client.php on line 149
+[26-Sep-2024 17:36:12 Africa/Cairo] PHP Fatal error:  Cannot redeclare App\V1\Client\Client::position() in /home/nfcads/public_html/backend/app/V1/Client/Client.php on line 154
