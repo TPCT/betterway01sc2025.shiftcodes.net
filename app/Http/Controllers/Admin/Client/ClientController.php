@@ -849,6 +849,7 @@ class ClientController extends Controller
         // }
 
         $Clients = $Clients
+            ->where('clients.ClientType', '!=', 'Agency')
             ->leftjoin("positions", "positions.IDPosition", "clients.IDPosition")
             ->leftjoin("areas", "areas.IDArea", "clients.IDArea")
             ->leftjoin("cities", "cities.IDCity", "areas.IDCity")
