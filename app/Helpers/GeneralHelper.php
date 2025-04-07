@@ -807,7 +807,6 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
 
 
 
-         var_dump($response);
          Log::debug('FCM response:', ['response' => $response]);
          if ($err) {
              Log::error('cURL error:', ['error' => $err]);
