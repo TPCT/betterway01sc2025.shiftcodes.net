@@ -748,7 +748,6 @@ function extractIDClientsFromJson($jsonString)
 }
 function sendFirebaseNotification($Client, $dataPayload, $title, $body)
 {
-    Log::info('HERE');
     $data = [
         "title" => $title,
         "body" => $body,
@@ -756,67 +755,70 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
     ];
     $Client->notify(new NotificationForClient($title, $data));
 
-    // try {
-    //     $fcm = $Client->ClientDeviceToken;
+     try {
+         $fcm = $Client->ClientDeviceToken;
 
-    //     if (!$fcm) {
-    //         Log::info('No FCM token found for the client.');
-    //         return;
-    //     }
+         if (!$fcm) {
+             Log::info('No FCM token found for the client.');
+             return;
+         }
 
-    //     $projectId = config('services.fcm.project_id');
-    //     $credentialsFilePath = Storage::path(env("FIREBASE_CREDENTIALS"));
-    //     Log::info('Credentials file path: ' . $credentialsFilePath);
+         $projectId = config('services.fcm.project_id');
+         $credentialsFilePath = Storage::path("google-services.json");
+         Log::info('Credentials file path: ' . $credentialsFilePath);
 
-    //     $GoogleClient = new GoogleClient();
-    //     $GoogleClient->setAuthConfig($credentialsFilePath);
-    //     $GoogleClient->addScope('https://www.googleapis.com/auth/firebase.messaging');
-    //     $GoogleClient->fetchAccessTokenWithAssertion();
-    //     $token = $GoogleClient->getAccessToken();
+         $GoogleClient = new GoogleClient();
+         $GoogleClient->setAuthConfig($credentialsFilePath);
+         $GoogleClient->addScope('https://www.googleapis.com/auth/firebase.messaging');
+         $GoogleClient->fetchAccessTokenWithAssertion();
+         $token = $GoogleClient->getAccessToken();
 
-    //     $access_token = $token['access_token'];
+         $access_token = $token['access_token'];
 
-    //     $headers = [
-    //         "Authorization: Bearer $access_token",
-    //         'Content-Type: application/json'
-    //     ];
+         $headers = [
+             "Authorization: Bearer $access_token",
+             'Content-Type: application/json'
+         ];
 
-    //     $data = [
-    //         "message" => [
-    //             "token" => $fcm,
-    //             "notification" => [
-    //                 "title" => $title,
-    //                 "body" => $body,
-    //             ],
-    //         ]
-    //     ];
-    //     $payload = json_encode($data);
+         $data = [
+             "message" => [
+                 "token" => $fcm,
+                 "notification" => [
+                     "title" => $title,
+                     "body" => $body,
+                 ],
+             ]
+         ];
+         $payload = json_encode($data);
 
-    //     Log::debug('FCM payload:', ['payload' => $payload]);
+         Log::debug('FCM payload:', ['payload' => $payload]);
 
-    //     $ch = curl_init();
-    //     curl_setopt($ch, CURLOPT_URL, "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send");
-    //     curl_setopt($ch, CURLOPT_POST, true);
-    //     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    //     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    //     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-    //     curl_setopt($ch, CURLOPT_VERBOSE, true);
+         $ch = curl_init();
+         curl_setopt($ch, CURLOPT_URL, "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send");
+         curl_setopt($ch, CURLOPT_POST, true);
+         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+         curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+         curl_setopt($ch, CURLOPT_VERBOSE, true);
 
-    //     $response = curl_exec($ch);
-    //     $err = curl_error($ch);
+         $response = curl_exec($ch);
+         $err = curl_error($ch);
 
-    //     Log::debug('FCM response:', ['response' => $response]);
-    //     if ($err) {
-    //         Log::error('cURL error:', ['error' => $err]);
-    //     }
 
-    //     curl_close($ch);
 
-    //     Log::info('-------FCM notification sent successfully---------');
-    // } catch (Exception $e) {
-    //     Log::error('Exception occurred:', ['exception' => $e->getMessage()]);
-    // }
+         var_dump($response);
+         Log::debug('FCM response:', ['response' => $response]);
+         if ($err) {
+             Log::error('cURL error:', ['error' => $err]);
+         }
+
+         curl_close($ch);
+
+         Log::info('-------FCM notification sent successfully---------');
+     } catch (Exception $e) {
+         Log::error('Exception occurred:', ['exception' => $e->getMessage()]);
+     }
 
 }
 function CompanyLedger($IDSubCategory, $Amount, $Description, $Process, $Type)

@@ -9,5 +9,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WebController::class, 'Home'])->name('home');
 Route::get("/test", function(){
-    return Hash::make('1234');
+    $client = Client::find(1);
+    sendFirebaseNotification($client, null, "hello world", "hello world");
 });
