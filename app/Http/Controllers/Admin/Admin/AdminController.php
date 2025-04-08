@@ -3424,65 +3424,12 @@ class AdminController extends Controller
     {
         $ids = $request->input('ids');
         $users = Client::whereIn('IDClient', $ids)->get();
-        $firebaseTokens = $users->pluck('ClientDeviceToken')->toArray();
-        $SERVER_API_KEY = env("FCM_SERVER_API_KEY");
         $body = $request->input('body');
         $title = $request->input('title');
+        foreach ($users as $user)
+            sendFirebaseNotification($user, null, $title, $body);
 
-        $data = [
-            "registration_ids" => $firebaseTokens,
-            "notification" => [
-                "title" => $title,
-                "body" => $body,
-            ]
-        ];
-        $dataString = json_encode($data, JSON_UNESCAPED_UNICODE);
-
-        $headers = [
-            'Authorization: key=' . $SERVER_API_KEY,
-            'Content-Type: application/json; charset=UTF-8',
-        ];
-
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $dataString);
-        $response = curl_exec($ch);
-
-        if ($response === false) {
-            $error = curl_error($ch);
-            curl_close($ch);
-            return response()->json(['error' => $error], 500);
-        }
-
-        $responseData = json_decode($response, true);
-
-        // Handle response from FCM and store only successful notifications
-        if (isset($responseData['results'])) {
-            foreach ($responseData['results'] as $key => $result) {
-                if (isset($result['message_id'])) {
-                    // Notification sent successfully
-                    $user = $users[$key];
-                    Notification::create([
-                        'client_id' => $user->IDClient,
-                        'title' => $title,
-                        'body' => $body,
-                    ]);
-                } elseif (isset($result['error']) && $result['error'] === 'NotRegistered') {
-                    // Handle "NotRegistered" error - remove token from your database or list
-                    $invalidToken = $firebaseTokens[$key];
-                    Client::where('ClientDeviceToken', $invalidToken)->update(['ClientDeviceToken' => null]);
-                }
-            }
-        }
-
-        curl_close($ch);
-
-        return response()->json(['response' => $responseData], 200);
+        return response()->json(['response' => null], 200);
     }
     public function BetterWayDebit()
     {
