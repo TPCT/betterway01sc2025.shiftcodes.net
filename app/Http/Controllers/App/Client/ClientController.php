@@ -3824,7 +3824,8 @@ class ClientController extends Controller
 
         $IDPlanProductUpgrade = $request->IDPlanProductUpgrade;
         $PlanProductUpgrade = PlanProductUpgrade::where("IDPlanProductUpgrade", $IDPlanProductUpgrade)->where("UpgradeActive", 1)->first();
-        if (!$PlanProductUpgrade) {
+
+        if (!$PlanProductUpgrade || $PlanProductUpgrade->UpgradeAgencyNumber <= 1) {
             return RespondWithBadRequest(1);
         }
 
@@ -3839,58 +3840,66 @@ class ClientController extends Controller
         $PlanNetwork->save();
 
         $AgencyNumber = $PlanProductUpgrade->UpgradeAgencyNumber;
+        $LeftNetwork = PlanNetwork::where('IDParentClient', $Client->IDClient)->where('PlanNetworkPosition', 'LEFT')->first();
+        $RightNetwork = PlanNetwork::where('IDParentClient', $Client->IDClient)->where('PlanNetworkPosition', 'RIGHT')->first();
+        $PlanNetworkProduct = PlanProduct::where("AgencyNumber", $AgencyNumber)->first();
 
-        if ($PlanProductUpgrade->UpgradeAgencyNumber == 3){
-            $LeftNetwork = PlanNetwork::where('IDParentClient', $Client->IDClient)->where('PlanNetworkPosition', 'LEFT')->first();
-            $RightNetwork = PlanNetwork::where('IDParentClient', $Client->IDClient)->where('PlanNetworkPosition', 'RIGHT')->first();
+        $LeftLeftAgencyIDClient = '';
+        $RightRightAgencyIDClient = '';
 
-            $PlanNetworkProduct = PlanProduct::where("AgencyNumber", $AgencyNumber)->first();
+        if ($AgencyNumber == 3){
             [$LeftAgencyIDClient, $RightAgencyIDClient] = CreateThirdAgencyClients($Client, $PlanNetwork->IDPlanNetwork, $PlanNetworkProduct->IDPlanProduct, $PlanNetwork, $PlanNetwork->PlanNetworkExpireDate, 0);
-            if ($LeftNetwork){
-                $LeftNetwork->update([
-                    'IDParentClient' => $LeftAgencyIDClient,
-                    'PlanNetworkPath' => $LeftNetwork->PlanNetworkPath . '-' . $LeftAgencyIDClient
-                ]);
-
-                Client::where('IDClient', $LeftNetwork->IDClient)->update([
-                    'IDUpline' => $LeftAgencyIDClient
-                ]);
-
-                $LeftNetworks = PlanNetwork::where('PlanNetworkPath', 'like', '%' . $Client->IDClient . '-' . $LeftNetwork->IDClient . '%')
-                    ->whereNotIn('IDClient', [$LeftAgencyIDClient, $RightAgencyIDClient])
-                    ->get();
-                foreach($LeftNetworks as $network){
-                    $PlanNetworkPath = $network->PlanNetworkPath;
-                    $network->update([
-                        'ClientLevel' => $network->ClientLevel + 1,
-                        'PlanNetworkPath' => str_replace($Client->IDClient . '-', $Client->IDClient . '-' . $LeftAgencyIDClient . '-', $PlanNetworkPath)
-                    ]);
-                }
-            }
-
-            if ($RightNetwork){
-                $RightNetwork?->update([
-                    'IDParentClient' => $RightAgencyIDClient,
-                    'PlanNetworkPath' => $RightNetwork->PlanNetworkPath . '-' . $RightAgencyIDClient
-                ]);
-
-                Client::where('IDClient', $RightNetwork->IDClient)->update([
-                    'IDUpline' => $RightAgencyIDClient
-                ]);
-
-                $RightNetworks = PlanNetwork::where('PlanNetworkPath', 'like', '%' . $Client->IDClient . '-' . $RightNetwork->IDClient . '%')
-                    ->whereNotIn('IDClient', [$LeftAgencyClient->IDClient, $RightAgencyIDClient])
-                    ->get();
-                foreach($RightNetworks as $network){
-                    $PlanNetworkPath = $network->PlanNetworkPath;
-                    $network->update([
-                        'ClientLevel' => $network->ClientLevel + 1,
-                        'PlanNetworkPath' => str_replace($Client->IDClient . '-', $Client->IDClient . '-' . $RightAgencyIDClient . '-', $PlanNetworkPath)
-                    ]);
-                }
-            }
-
+        }elseif ($AgencyNumber == 5){
+            [$LeftAgencyIDClient, $RightAgencyIDClient, $LeftLeftAgencyIDClient, $RightRightAgencyIDClient] = CreateFifthAgencyClients($Client, $PlanNetwork->IDPlanNetwork, $PlanNetworkProduct->IDPlanProduct, $PlanNetwork, $PlanNetwork->PlanNetworkExpireDate, 0);
         }
+
+        if ($LeftNetwork){
+            $NewLeftNetworkPath = '-' . $LeftAgencyIDClient . ($LeftLeftAgencyIDClient ? '-' . $LeftLeftAgencyIDClient : '');
+            $LeftNetwork->update([
+                'IDParentClient' => $LeftLeftAgencyIDClient ?: $LeftAgencyIDClient,
+                'PlanNetworkPath' => $LeftNetwork->PlanNetworkPath . $NewLeftNetworkPath
+            ]);
+
+            Client::where('IDClient', $LeftNetwork->IDClient)->update([
+                'IDUpline' => $LeftLeftAgencyIDClient
+            ]);
+
+            $LeftNetworks = PlanNetwork::where('PlanNetworkPath', 'like', '%' . $Client->IDClient . '-' . $LeftNetwork->IDClient . '%')
+                ->whereNotIn('IDClient', [$LeftAgencyIDClient, $RightAgencyIDClient, $LeftLeftAgencyIDClient, $RightRightAgencyIDClient])
+                ->get();
+            foreach($LeftNetworks as $network){
+                $PlanNetworkPath = $network->PlanNetworkPath;
+                $network->update([
+                    'ClientLevel' => $network->ClientLevel + 1,
+                    'PlanNetworkPath' => str_replace($Client->IDClient . '-', $Client->IDClient . $NewLeftNetworkPath . '-', $PlanNetworkPath)
+                ]);
+            }
+        }
+
+        if ($RightNetwork){
+            $NewRightNetworkPath = '-' . $RightAgencyIDClient . ($RightRightAgencyIDClient ? '-' . $RightRightAgencyIDClient : '');
+
+            $RightNetwork?->update([
+                'IDParentClient' => $RightAgencyIDClient,
+                'PlanNetworkPath' => $RightNetwork->PlanNetworkPath . $NewRightNetworkPath
+            ]);
+
+            Client::where('IDClient', $RightNetwork->IDClient)->update([
+                'IDUpline' => $RightAgencyIDClient
+            ]);
+
+            $RightNetworks = PlanNetwork::where('PlanNetworkPath', 'like', '%' . $Client->IDClient . '-' . $RightNetwork->IDClient . '%')
+                ->whereNotIn('IDClient', [$LeftAgencyIDClient, $RightAgencyIDClient, $LeftLeftAgencyIDClient, $RightRightAgencyIDClient])
+                ->get();
+            foreach($RightNetworks as $network){
+                $PlanNetworkPath = $network->PlanNetworkPath;
+                $network->update([
+                    'ClientLevel' => $network->ClientLevel + 1,
+                    'PlanNetworkPath' => str_replace($Client->IDClient . '-', $Client->IDClient . $NewRightNetworkPath . '-', $PlanNetworkPath)
+                ]);
+            }
+        }
+
 
         while ($Counter <= $AgencyNumber) {
             $PlanNetworkAgencyName = "0" . $Counter;

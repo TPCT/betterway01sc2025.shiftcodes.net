@@ -839,110 +839,98 @@ function CompanyLedger($IDSubCategory, $Amount, $Description, $Process, $Type)
     return $CompanyLedger;
 }
 
-function CreateThirdAgencyClients($Client, $IDPlan, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $RewardPoints)
+function createAgencyClient($Parent, $Position, $Index): Client
 {
-    $parts = explode(' ', $Client->ClientName);
-    $firstName = $parts[0];
-
-    $FirstAgencyClient = new Client();
+    $firstName = explode(' ', $Parent->ClientName)[0];
     $NextIDClient = DB::select('SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE  TABLE_NAME = "clients"')[0]->AUTO_INCREMENT;
     $TimeFormat = new DateTime('now');
     $Time = $TimeFormat->format('H');
     $Time = $Time . $TimeFormat->format('i');
 
-    $FirstAgencyClientAppID = "0" . $NextIDClient . $Time;
-    $FirstAgencyClient->IDArea = $Client->IDArea;
-    $FirstAgencyClient->IDNationality = $Client->IDNationality;
-    $FirstAgencyClient->ClientAppID = $FirstAgencyClientAppID;
-    $FirstAgencyClient->ClientName = $firstName . ' 002';
-    $FirstAgencyClient->IDReferral = $Client->IDClient;
-    $FirstAgencyClient->IDUpline = $Client->IDClient;
-    $FirstAgencyClient->NetworkPosition = "LEFT";
-    $FirstAgencyClient->ClientPassword = $Client->ClientPassword;
-    $FirstAgencyClient->ClientPrivacy = $Client->ClientPrivacy;
-    $FirstAgencyClient->VerificationCode = CreateVerificationCode();
-    $FirstAgencyClient->ClientType = "Agency";
-    $FirstAgencyClient->AgencyFor = $Client->IDClient;
-    $FirstAgencyClient->ClientStatus = "Active";
-    $FirstAgencyClient->save();
+    $AgencyClient = new Client();
+    $AgencyClient->IDArea = $Parent->IDArea;
+    $AgencyClient->IDNationality = $Parent->IDNationality;
+    $AgencyClient->ClientAppID = "0" . $NextIDClient . $Time;
+    $AgencyClient->ClientName = $firstName . ' ' . $Index;
+    $AgencyClient->IDReferral = $Parent->IDClient;
+    $AgencyClient->IDUpline = $Parent->IDClient;
+    $AgencyClient->NetworkPosition = $Position;
+    $AgencyClient->ClientPassword = $Parent->ClientPassword;
+    $AgencyClient->ClientPrivacy = $Parent->ClientPrivacy;
+    $AgencyClient->VerificationCode = CreateVerificationCode();
+    $AgencyClient->ClientType = "Agency";
+    $AgencyClient->AgencyFor = $Parent->IDClient;
+    $AgencyClient->ClientStatus = "Active";
+    $AgencyClient->save();
 
-    // Plan Network For First Agency
-    $F_PlanNetwork = new PlanNetwork;
-    $F_PlanNetwork->IDClient = $FirstAgencyClient->IDClient;
-    $F_PlanNetwork->IDPlan = $IDPlan;
-    $F_PlanNetwork->IDPlanProduct = $IDPlanProduct;
-    $F_PlanNetwork->IDParentClient = $Client->IDClient;
-    $F_PlanNetwork->IDReferralClient = $Client->IDClient;
-    $F_PlanNetwork->ClientLevel = $ParentPlanNetwork->ClientLevel + 1;
+    return $AgencyClient;
+}
+
+function createAgencyPlanNetwork($ParentPlanNetwork, $Parent, $PlanProductID, $AgencyClient, $Position): PlanNetwork
+{
+    $AgencyPlanNetwork = new PlanNetwork;
+    $AgencyPlanNetwork->IDClient = $AgencyClient->IDClient;
+    $AgencyPlanNetwork->IDPlan = $ParentPlanNetwork->IDPlanNetwork;
+    $AgencyPlanNetwork->IDPlanProduct = $PlanProductID;
+    $AgencyPlanNetwork->IDParentClient = $Parent->IDClient;
+    $AgencyPlanNetwork->IDReferralClient = $Parent->IDClient;
+    $AgencyPlanNetwork->ClientLevel = $ParentPlanNetwork->ClientLevel + 1;
 
 
     if ($ParentPlanNetwork->PlanNetworkPath) {
-        $F_PlanNetwork->PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath . "-" . $Client->IDClient;
+        $AgencyPlanNetwork->PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath . "-" . $Parent->IDClient;
     } else {
-        $F_PlanNetwork->PlanNetworkPath = $Client->IDClient;
+        $AgencyPlanNetwork->PlanNetworkPath = $Parent->IDClient;
     }
-    $F_PlanNetwork->PlanNetworkPosition = "LEFT";
-    $F_PlanNetwork->PlanNetworkExpireDate = $PlanNetworkExpireDate;
-    $F_PlanNetwork->save();
+    $AgencyPlanNetwork->PlanNetworkPosition = $Position;
+    $AgencyPlanNetwork->PlanNetworkExpireDate = $ParentPlanNetwork->PlanNetworkExpireDate;
+    $AgencyPlanNetwork->save();
 
-    // Reward Points For First Agency
-    $BatchNumber = "#PN" . $F_PlanNetwork->IDPlanNetwork;
+    return $AgencyPlanNetwork;
+}
+
+function generateRewardPoints($AgencyPlanNetwork, $Parent, $RewardPoints, $Position){
+    $BatchNumber = "#PN" . $AgencyPlanNetwork->IDPlanNetwork;
     $TimeFormat = new DateTime('now');
     $Time = $TimeFormat->format('H');
     $Time = $Time . $TimeFormat->format('i');
     $BatchNumber = $BatchNumber . $Time;
 
-    AdjustLedger($Client, 0, 0, 0, 0, $F_PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
-    $Client->ClientLeftPoints = $Client->ClientLeftPoints + $RewardPoints;
-    $Client->ClientTotalPoints = $Client->ClientTotalPoints + $RewardPoints;
+    AdjustLedger($Parent, 0, 0, 0, 0, $AgencyPlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
+    $Parent->{"Client" . ucfirst($Position) . "Points"} = $Parent->ClientLeftPoints + $RewardPoints;
+    $Parent->ClientTotalPoints = $Parent->ClientTotalPoints + $RewardPoints;
+}
 
-    //
-    $SecondAgencyClient = new Client();
-    $SecondAgencyClientAppID = "0" . $NextIDClient . $Time;
-    $SecondAgencyClient->ClientAppID = $SecondAgencyClientAppID;
-    $SecondAgencyClient->ClientName = $firstName . ' 003';
-    $SecondAgencyClient->IDArea = $Client->IDArea;
-    $SecondAgencyClient->IDNationality = $Client->IDNationality;
-    $SecondAgencyClient->IDReferral = $Client->IDClient;
-    $SecondAgencyClient->IDUpline = $Client->IDClient;
-    $SecondAgencyClient->NetworkPosition = "RIGHT";
-    $SecondAgencyClient->ClientPassword = $Client->ClientPassword;
-    $SecondAgencyClient->ClientPrivacy = $Client->ClientPrivacy;
-    $SecondAgencyClient->VerificationCode = CreateVerificationCode();
-    $SecondAgencyClient->ClientType = "Agency";
-    $SecondAgencyClient->AgencyFor = $Client->IDClient;
-    $SecondAgencyClient->ClientStatus = "Active";
-    $SecondAgencyClient->save();
-    // Plan Network For Second Agency
+function CreateThirdAgencyClients($Client, $IDPlan, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $RewardPoints)
+{
+    $LeftAgencyClient = createAgencyClient($Client, "LEFT", "002");
+    $LeftAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $LeftAgencyClient, "LEFT");
+    generateRewardPoints($LeftAgencyPlanNetwork, $Client, $RewardPoints, "LEFT");
 
-    $S_PlanNetwork = new PlanNetwork;
-    $S_PlanNetwork->IDClient = $SecondAgencyClient->IDClient;
-    $S_PlanNetwork->IDPlan = $IDPlan;
-    $S_PlanNetwork->IDPlanProduct = $IDPlanProduct;
-    $S_PlanNetwork->IDParentClient = $Client->IDClient;
-    $S_PlanNetwork->IDReferralClient = $Client->IDClient;
-    $S_PlanNetwork->ClientLevel = $ParentPlanNetwork->ClientLevel + 1;
-    if ($ParentPlanNetwork->PlanNetworkPath) {
-        $S_PlanNetwork->PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath . "-" . $Client->IDClient;
-    } else {
-        $S_PlanNetwork->PlanNetworkPath = $Client->IDClient;
-    }
-    $S_PlanNetwork->PlanNetworkPosition = "RIGHT";
-    $S_PlanNetwork->PlanNetworkExpireDate = $PlanNetworkExpireDate;
+    $RightAgencyClient = createAgencyClient($Client, "RIGHT", "003");
+    $RightAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $RightAgencyClient, "RIGHT");
+    generateRewardPoints($RightAgencyPlanNetwork, $Client, $RewardPoints, "RIGHT");
+    return [$LeftAgencyPlanNetwork->IDClient, $RightAgencyClient->IDClient];
+}
 
-    $S_PlanNetwork->save();
+function CreateFifthAgencyClients($Client, $IDPlan, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $RewardPoints){
+    $LeftAgencyClient = createAgencyClient($Client, "LEFT", "002");
+    $LeftAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $LeftAgencyClient, "LEFT");
+    generateRewardPoints($LeftAgencyPlanNetwork, $Client, $RewardPoints, "LEFT");
 
-    // Reward Points For Second Agency
-    $BatchNumber = "#PN" . $S_PlanNetwork->IDPlanNetwork;
-    $TimeFormat = new DateTime('now');
-    $Time = $TimeFormat->format('H');
-    $Time = $Time . $TimeFormat->format('i');
-    $BatchNumber = $BatchNumber . $Time;
+    $RightAgencyClient = createAgencyClient($Client, "RIGHT", "003");
+    $RightAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $RightAgencyClient, "RIGHT");
+    generateRewardPoints($RightAgencyPlanNetwork, $Client, $RewardPoints, "RIGHT");
 
-    AdjustLedger($Client, 0, 0, 0, 0, $S_PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
-    $Client->ClientRightPoints = $Client->ClientRightPoints + $RewardPoints;
-    $Client->ClientTotalPoints = $Client->ClientTotalPoints + $RewardPoints;
-    $Client->save();
+    $LeftLeftAgencyClient = createAgencyClient($LeftAgencyClient, "LEFT", "004");
+    $LeftLeftAgencyPlanNetwork = createAgencyPlanNetwork($LeftAgencyPlanNetwork, $LeftAgencyClient, $IDPlanProduct, $LeftLeftAgencyClient, "LEFT");
+    generateRewardPoints($LeftLeftAgencyPlanNetwork, $Client, $RewardPoints, "LEFT");
 
-    return [$F_PlanNetwork->IDClient, $S_PlanNetwork->IDClient];
+    $RightRightAgencyClient = createAgencyClient($RightAgencyClient, "RIGHT", "005");
+    $RightRightAgencyPlanNetwork = createAgencyPlanNetwork($RightAgencyPlanNetwork, $RightAgencyClient, $IDPlanProduct, $RightRightAgencyClient, "RIGHT");
+    generateRewardPoints($RightRightAgencyPlanNetwork, $Client, $RewardPoints, "RIGHT");
+
+    return [
+        $LeftLeftAgencyPlanNetwork->IDClient, $RightAgencyPlanNetwork->IDClient, $LeftLeftAgencyPlanNetwork->IDClient, $RightRightAgencyClient->IDClient
+    ];
 }
