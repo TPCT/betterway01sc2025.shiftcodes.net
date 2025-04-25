@@ -146,7 +146,8 @@ class Client extends Authenticatable implements JWTSubject
     }
     public function getClientAgenciesAttribute()
     {
-        return Client::where("AgencyFor", $this->IDClient)->get();
+        return PlanNetworkAgency::where('IDPlanNetwork', $this->planNetwork->IDPlanNetwork)->get();
+//        return Client::where("AgencyFor", $this->IDClient)->get();
     }
     
 
@@ -158,7 +159,7 @@ class Client extends Authenticatable implements JWTSubject
 
     public function planNetwork()
     {
-        return $this->hasMany(PlanNetwork::class, 'IDClient', 'IDClient');
+        return $this->hasOne(PlanNetwork::class, 'IDClient', 'IDClient');
     }
 
     public function referral()

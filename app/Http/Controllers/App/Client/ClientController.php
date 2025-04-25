@@ -860,7 +860,7 @@ class ClientController extends Controller
             'ClientPicture' => $Client->ClientPicture ? asset($Client->ClientPicture) : '',
             'ClientCoverImage' => $Client->ClientCoverImage ? asset($Client->ClientCoverImage) : '',
             'ClientStatus' => $Client->ClientStatus,
-            'FlowStatus' => $FlowStatus,
+            'FlowStatus' => 'Home',
             'ClientBalance' => $Client->ClientBalance,
             'ClientGender' => $Client->ClientGender,
             'PositionName' => $PositionName,
@@ -3638,8 +3638,6 @@ class ClientController extends Controller
             return RespondWithBadRequest(25);
         }
 
-
-
         if ($ParentClient) {
             $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
             $IDParentClient = $IDUpline;
@@ -3671,7 +3669,8 @@ class ClientController extends Controller
                     $AgencyNumber++;
                 }
             }
-        } else {
+        }
+        else {
             if (!$IDReferral) {
                 return RespondWithBadRequest(1);
             }
@@ -3762,7 +3761,8 @@ class ClientController extends Controller
 
         if ($PlanProduct->AgencyNumber == 3)
             CreateThirdAgencyClients($Client, $IDPlan, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, $AgencyPointsFromProduct);
-
+        elseif ($PlanProduct->AgencyNumber == 5)
+            CreateFifthAgencyClients($Client, $IDPlan, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, $AgencyPointsFromProduct);
         return RespondWithSuccessRequest(8);
     }
 
@@ -3899,7 +3899,6 @@ class ClientController extends Controller
                 ]);
             }
         }
-
 
         while ($Counter <= $AgencyNumber) {
             $PlanNetworkAgencyName = "0" . $Counter;

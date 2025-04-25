@@ -80,7 +80,7 @@ class NotificationController extends Controller
 
     public function allNoification($client_id)
     {
-        $notifications = Notification::where('client_id', $client_id)
+        $notifications = Notification::where('notifiable_id', $client_id)
             ->orderBy('created_at', 'desc')
             ->get()->map(function ($notification) {
                 return [
