@@ -2217,6 +2217,7 @@ class ClientController extends Controller
                 "c1.ClientName", "c1.ClientPhone", "c1.ClientAppID", "c1.ClientPrivacy",
                 "c1.ClientPicture", "c1.ClientLeftPoints", "c1.ClientRightPoints", "c2.ClientName as ReferralName"
             ])->first();
+
         if (!$ParentNetwork) {
             return RespondWithBadRequest(1);
         }
@@ -2246,17 +2247,6 @@ class ClientController extends Controller
             ])
             ->get();
 
-//          if ($ChildrenNetwork->isEmpty()) {
-//            $ChildrenNetwork = PlanNetwork::leftjoin("clients as c1", "c1.IDClient", "plannetwork.IDClient")
-//            ->leftjoin("clients as c2", "c2.IDClient", "plannetwork.IDReferralClient")
-//            ->where("plannetwork.children_third_agency_clients", $IDParentClient)
-//            ->where("plannetwork.IDClient","!=" ,$IDParentClient)
-//            // ->where("plannetwork.PlanNetworkAgency", $AgencyNumber)
-//            ->select("plannetwork.PlanNetworkPosition", "c1.IDClient", "c1.IDPosition",
-//            "c1.ClientName", "c1.ClientPhone", "c1.ClientAppID", "c1.ClientPrivacy",
-//            "c1.ClientPicture", "c1.ClientLeftPoints", "c1.ClientRightPoints", "c2.ClientName as ReferralName")
-//            ->get();
-//          }
 
 
         foreach ($ChildrenNetwork as $Child) {
@@ -2297,88 +2287,18 @@ class ClientController extends Controller
             return RespondWithBadRequest(10);
         }
 
-        $ClientLanguage = LocalAppLanguage($Client->ClientAppLanguage);
         $IDClient = $request->IDClient ? $request->IDClient : $Client->IDClient;
         $Client = Client::find($IDClient);
 
-        $AgencyNumber = 1;
-
-        $PlanProductPoints = 0;
         $LeftPoints = $Client->ClientLeftPoints;
         $RightPoints = $Client->ClientRightPoints;
         $LeftPersons = $Client->ClientLeftNumber;
         $RightPersons = $Client->ClientRightNumber;
 
-//        $PlanProduct = PlanNetwork::leftjoin("planproducts", "planproducts.IDPlanProduct", "plannetwork.IDPlanProduct")->where("plannetwork.IDClient", $IDClient)->first();
-//        if ($PlanProduct) {
-//            $PlanProductPoints = $PlanProduct->PlanProductPoints;
-//        }
-//
-//        $LeftNetwork = PlanNetwork::where("IDParentClient", $IDClient)->where("PlanNetworkAgency", $AgencyNumber)->where("PlanNetworkPosition", "LEFT")->first();
-//        $RightNetwork = PlanNetwork::where("IDParentClient", $IDClient)->where("PlanNetworkAgency", $AgencyNumber)->where("PlanNetworkPosition", "RIGHT")->first();
-//
-//        if ($LeftNetwork) {
-//            $IDClient = $LeftNetwork->IDClient;
-//            $Key = $IDClient . "-";
-//            $SecondKey = $IDClient . "-";
-//            $ThirdKey = "-" . $IDClient;
-//            $AllNetwork = PlanNetwork::leftjoin("clients", "clients.IDClient", "plannetwork.IDClient")->leftjoin("clients as C1", "C1.IDClient", "plannetwork.IDReferralClient")->where("plannetwork.PlanNetworkAgency", $AgencyNumber);
-//            $AllNetwork = $AllNetwork->where(function ($query) use ($IDClient, $Key, $SecondKey, $ThirdKey) {
-//                $query->where("plannetwork.PlanNetworkPath", 'like', $IDClient . '%')
-//                    ->orwhere("plannetwork.PlanNetworkPath", $IDClient)
-//                    ->orwhere("plannetwork.PlanNetworkPath", 'like', $Key . '%')
-//                    ->orwhere("plannetwork.PlanNetworkPath", 'like', '%' . $SecondKey . '%')
-//                    ->orwhere("plannetwork.PlanNetworkPath", 'like', '%' . $ThirdKey . '%');
-//            });
-//
-//            $LeftPersons = $AllNetwork->count() + 1;
-//            $LeftPoints = $LeftPersons * $PlanProductPoints;
-//            $LeftNetwork = $AllNetwork->select("plannetwork.IDClient")->get()->pluck("IDClient")->toArray();
-//            array_push($LeftNetwork, $IDClient);
-//        }
-//
-//        if ($RightNetwork) {
-//            $IDClient = $RightNetwork->IDClient;
-//            $Key = $IDClient . "-";
-//            $SecondKey = $IDClient . "-";
-//            $ThirdKey = "-" . $IDClient;
-//            $AllNetwork = PlanNetwork::leftjoin("clients", "clients.IDClient", "plannetwork.IDClient")->leftjoin("clients as C1", "C1.IDClient", "plannetwork.IDReferralClient")->where("plannetwork.PlanNetworkAgency", $AgencyNumber);
-//            $AllNetwork = $AllNetwork->where(function ($query) use ($IDClient, $Key, $SecondKey, $ThirdKey) {
-//                $query->where("plannetwork.PlanNetworkPath", 'like', $IDClient . '%')
-//                    ->orwhere("plannetwork.PlanNetworkPath", $IDClient)
-//                    ->orwhere("plannetwork.PlanNetworkPath", 'like', $Key . '%')
-//                    ->orwhere("plannetwork.PlanNetworkPath", 'like', '%' . $SecondKey . '%')
-//                    ->orwhere("plannetwork.PlanNetworkPath", 'like', '%' . $ThirdKey . '%');
-//            });
-//
-//            $RightPersons = $AllNetwork->count() + 1;
-//            $RightPoints = $RightPersons * $PlanProductPoints;
-//            $RightNetwork = $AllNetwork->select("plannetwork.IDClient")->get()->pluck("IDClient")->toArray();
-//            array_push($RightNetwork, $IDClient);
-//        }
 
         $TotalPoints = $LeftPoints + $RightPoints;
         $TotalPersons = $LeftPersons + $RightPersons;
         $Positions = [];
-
-//        $Positions = Position::where("PositionStatus", "ACTIVE")->select("IDPosition", "PositionTitleEn", "PositionTitleAr")->get();
-//        $PositionTitle = "PositionTitle" . $ClientLanguage;
-//        foreach ($Positions as $Position) {
-//            $LeftPositionClient = 0;
-//            $RightPositionClient = 0;
-//            if ($LeftNetwork) {
-//                $LeftPositionClient = Client::where("IDPosition", $Position->IDPosition)->whereIn("IDClient", $LeftNetwork)->count();
-//            }
-//            if ($RightNetwork) {
-//                $RightPositionClient = Client::where("IDPosition", $Position->IDPosition)->whereIn("IDClient", $RightNetwork)->count();
-//            }
-//            $Position->PositionTitle = $Position->$PositionTitle;
-//            $Position->LeftPositionClient = $LeftPositionClient;
-//            $Position->RightPositionClient = $RightPositionClient;
-//            $Position->TotalPositionClient = $LeftPositionClient + $RightPositionClient;
-//            unset($Position['PositionTitleEn']);
-//            unset($Position['PositionTitleAr']);
-//        }
 
         $Response = array("TotalPoints" => $TotalPoints, "LeftPoints" => $LeftPoints, "RightPoints" => $RightPoints, "TotalPersons" => $TotalPersons, "LeftPersons" => $LeftPersons, "RightPersons" => $RightPersons, "Positions" => $Positions);
 
@@ -3320,7 +3240,7 @@ class ClientController extends Controller
 
         AdjustLedger($Client, -$Amount, 0, 0, 0, $PlanNetwork, "WALLET", "EVENT", "PAYMENT", $BatchNumber);
         if ($EventAttendee->EventAttendeeStatus == "PAID") {
-            AdjustLedger($Client, 0, $EventPoints, $EventReferralPoints, $EventUplinePoints, $PlanNetwork, "EVENT", "WALLET", "REWARD", $BatchNumber);
+            AdjustLedger($Client, 0, $EventPoints, 0, 0, $PlanNetwork, "EVENT", "WALLET", "REWARD", $BatchNumber);
         }
         CompanyLedger(23, $Amount, "Event Payment by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
@@ -3468,7 +3388,7 @@ class ClientController extends Controller
         $Time = $Time . $TimeFormat->format('i');
         $BatchNumber = $BatchNumber . $Time;
         AdjustLedger($Client, -$Tool->ToolPrice, 0, 0, 0, $PlanNetwork, "WALLET", "TOOL", "PAYMENT", $BatchNumber);
-        AdjustLedger($Client, 0, $Tool->ToolPoints, $Tool->ToolReferralPoints, $Tool->ToolUplinePoints, $PlanNetwork, "TOOL", "WALLET", "REWARD", $BatchNumber);
+        AdjustLedger($Client, 0, $Tool->ToolPoints, 0, 0, $PlanNetwork, "TOOL", "WALLET", "REWARD", $BatchNumber);
 
         CompanyLedger(20, $Tool->ToolPrice, "Tool bought by client " . $Client->ClientName, "AUTO", "CREDIT");
 
@@ -3597,6 +3517,7 @@ class ClientController extends Controller
 
     public function BuyPlanProduct(Request $request)
     {
+//        DB::beginTransaction();
         $Client = auth('client')->user();
         if (!$Client) {
             return RespondWithBadRequest(10);
@@ -3626,12 +3547,15 @@ class ClientController extends Controller
         $IDClient = $Client->IDClient;
         $IDUpline = $Client->IDUpline;
         $IDReferral = $Client->IDReferral;
-        $IDPlan = $PlanProduct->IDPlan;
         $PlanNetworkPosition = $Client->NetworkPosition;
 
         $ParentClient = Client::find($IDUpline);
         $ReferralClient = Client::find($IDReferral);
         $IDReferralClient = $ReferralClient->IDClient;
+
+        if (!$IDReferral && !$ParentClient) {
+            return RespondWithBadRequest(1);
+        }
 
         $ClientPlanNetwork = PlanNetwork::where("IDClient", $IDClient)->first();
         if ($ClientPlanNetwork) {
@@ -3649,7 +3573,8 @@ class ClientController extends Controller
             }
 
             $ParentNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)
-            ->where("IDPlanNetwork", "!=", $ParentPlanNetwork->IDPlanNetwork)->count();
+                ->where("IDPlanNetwork", "!=", $ParentPlanNetwork->IDPlanNetwork)->count();
+
             $ParentPositionNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->count();
             $ChildNumber = $ParentPlanNetwork->PlanNetworkAgencyNumber * 2;
             if ($ParentNetwork == $ChildNumber) {
@@ -3671,10 +3596,6 @@ class ClientController extends Controller
             }
         }
         else {
-            if (!$IDReferral) {
-                return RespondWithBadRequest(1);
-            }
-
             $Key = $IDReferral . "-";
             $SecondKey = $IDReferral . "-";
             $ThirdKey = "-" . $IDReferral;
@@ -3691,7 +3612,6 @@ class ClientController extends Controller
 
             if (!count($AllNetwork)) {
                 $ParentPlanNetwork = PlanNetwork::leftjoin("planproducts", "planproducts.IDPlanProduct", "plannetwork.IDPlanProduct")->where("plannetwork.IDClient", $IDReferral)->first();
-                $IDParentClient = $IDReferral;
             } else {
                 $ParentPlanNetwork = PlanNetwork::where("PlanNetworkPosition", "LEFT")->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
                     $query->where("PlanNetworkPath", 'like', $IDReferral . '%')
@@ -3699,7 +3619,6 @@ class ClientController extends Controller
                         ->orwhere("PlanNetworkPath", 'like', '%' . $SecondKey . '%')
                         ->orwhere("PlanNetworkPath", 'like', '%' . $ThirdKey . '%');
                 })->orderby("ClientLevel", "DESC")->first();
-                $IDParentClient = $ParentPlanNetwork->IDClient;
             }
         }
 
@@ -3709,25 +3628,13 @@ class ClientController extends Controller
         $PlanNetworkExpireDate = $Date->add(new DateInterval('PT' . $PlanNetworkExpireDate . 'S'));
         $PlanNetworkExpireDate = $PlanNetworkExpireDate->format('Y-m-d H:i:s');
 
-        $PlanNetwork = new PlanNetwork;
-        $PlanNetwork->IDClient = $IDClient;
-        $PlanNetwork->IDPlan = $IDPlan;
-        $PlanNetwork->IDPlanProduct = $IDPlanProduct;
-        $PlanNetwork->IDParentClient = $IDParentClient;
-        $PlanNetwork->IDReferralClient = $IDReferralClient;
-        $PlanNetwork->ClientLevel = $ParentPlanNetwork->ClientLevel + 1;
+        $PlanNetwork = createPlanNetwork(
+            $ParentPlanNetwork, $ParentClient,
+            $IDPlanProduct, $Client,
+            $PlanNetworkPosition, $PlanNetworkExpireDate,
+            $AgencyNumber, $PlanProduct->AgencyNumber
+        );
 
-        if ($ParentPlanNetwork->PlanNetworkPath) {
-            $PlanNetwork->PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath . "-" . $IDParentClient;
-        } else {
-            $PlanNetwork->PlanNetworkPath = $IDParentClient;
-        }
-
-        $PlanNetwork->PlanNetworkPosition = $PlanNetworkPosition;
-        $PlanNetwork->PlanNetworkAgency = $AgencyNumber;
-        $PlanNetwork->PlanNetworkAgencyNumber = $PlanProduct->AgencyNumber;
-        $PlanNetwork->PlanNetworkExpireDate = $PlanNetworkExpireDate;
-        $PlanNetwork->save();
 
         $AgencyNumber = $PlanProduct->AgencyNumber;
         $Counter = 1;
@@ -3744,25 +3651,20 @@ class ClientController extends Controller
 
         CompanyLedger(21, $PlanProduct->PlanProductPrice, "Product Bought by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
-        $Client = Client::find($IDClient);
         $Client->ClientStatus = "ACTIVE";
         $Client->save();
-
-        $BatchNumber = "#PN" . $PlanNetwork->IDPlanNetwork;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-
-        $AgencyPointsFromProduct = $PlanProduct->PlanProductPoints / $PlanProduct->AgencyNumber;
-
+        $BatchNumber = generateBatchNumber($PlanNetwork);
         AdjustLedger($Client, -$PlanProduct->PlanProductPrice, 0, 0, 0, $PlanNetwork, "WALLET", "PLAN_PRODUCT", "PAYMENT", $BatchNumber);
         AdjustLedger($Client, 0, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
 
-        if ($PlanProduct->AgencyNumber == 3)
-            CreateThirdAgencyClients($Client, $IDPlan, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, $AgencyPointsFromProduct);
+        if ($PlanProduct->AgencyNumber == 1)
+            CreateOneAgencyClients($Client, $IDPlanProduct, $PlanNetwork);
+        elseif ($PlanProduct->AgencyNumber == 3)
+            CreateThirdAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate);
         elseif ($PlanProduct->AgencyNumber == 5)
-            CreateFifthAgencyClients($Client, $IDPlan, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, $AgencyPointsFromProduct);
+            CreateFifthAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate);
+
+//        DB::rollBack();
         return RespondWithSuccessRequest(8);
     }
 
@@ -3842,62 +3744,20 @@ class ClientController extends Controller
         $AgencyNumber = $PlanProductUpgrade->UpgradeAgencyNumber;
         $LeftNetwork = PlanNetwork::where('IDParentClient', $Client->IDClient)->where('PlanNetworkPosition', 'LEFT')->first();
         $RightNetwork = PlanNetwork::where('IDParentClient', $Client->IDClient)->where('PlanNetworkPosition', 'RIGHT')->first();
-        $PlanNetworkProduct = PlanProduct::where("AgencyNumber", $AgencyNumber)->first();
 
-        $LeftLeftAgencyIDClient = '';
-        $RightRightAgencyIDClient = '';
+        $PlanProduct = PlanProduct::where('AgencyNumber', $PlanProductUpgrade->UpgradeAgencyNumber)->first();
+        $IDPlanProduct = $PlanProduct->IDPlanProduct;
+
+        $PlanNetworkExpireDate = GeneralSettings('PlanNetworkExpireDate');
+        $PlanNetworkExpireDate = $PlanNetworkExpireDate * 24 * 60 * 60;
+        $Date = new DateTime('now');
+        $PlanNetworkExpireDate = $Date->add(new DateInterval('PT' . $PlanNetworkExpireDate . 'S'));
+        $PlanNetworkExpireDate = $PlanNetworkExpireDate->format('Y-m-d H:i:s');
 
         if ($AgencyNumber == 3){
-            [$LeftAgencyIDClient, $RightAgencyIDClient] = CreateThirdAgencyClients($Client, $PlanNetwork->IDPlanNetwork, $PlanNetworkProduct->IDPlanProduct, $PlanNetwork, $PlanNetwork->PlanNetworkExpireDate, 0);
+            CreateThirdAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, true);
         }elseif ($AgencyNumber == 5){
-            [$LeftAgencyIDClient, $RightAgencyIDClient, $LeftLeftAgencyIDClient, $RightRightAgencyIDClient] = CreateFifthAgencyClients($Client, $PlanNetwork->IDPlanNetwork, $PlanNetworkProduct->IDPlanProduct, $PlanNetwork, $PlanNetwork->PlanNetworkExpireDate, 0);
-        }
-
-        if ($LeftNetwork){
-            $NewLeftNetworkPath = '-' . $LeftAgencyIDClient . ($LeftLeftAgencyIDClient ? '-' . $LeftLeftAgencyIDClient : '');
-            $LeftNetwork->update([
-                'IDParentClient' => $LeftLeftAgencyIDClient ?: $LeftAgencyIDClient,
-                'PlanNetworkPath' => $LeftNetwork->PlanNetworkPath . $NewLeftNetworkPath
-            ]);
-
-            Client::where('IDClient', $LeftNetwork->IDClient)->update([
-                'IDUpline' => $LeftLeftAgencyIDClient
-            ]);
-
-            $LeftNetworks = PlanNetwork::where('PlanNetworkPath', 'like', '%' . $Client->IDClient . '-' . $LeftNetwork->IDClient . '%')
-                ->whereNotIn('IDClient', [$LeftAgencyIDClient, $RightAgencyIDClient, $LeftLeftAgencyIDClient, $RightRightAgencyIDClient])
-                ->get();
-            foreach($LeftNetworks as $network){
-                $PlanNetworkPath = $network->PlanNetworkPath;
-                $network->update([
-                    'ClientLevel' => $network->ClientLevel + 1,
-                    'PlanNetworkPath' => str_replace($Client->IDClient . '-', $Client->IDClient . $NewLeftNetworkPath . '-', $PlanNetworkPath)
-                ]);
-            }
-        }
-
-        if ($RightNetwork){
-            $NewRightNetworkPath = '-' . $RightAgencyIDClient . ($RightRightAgencyIDClient ? '-' . $RightRightAgencyIDClient : '');
-
-            $RightNetwork?->update([
-                'IDParentClient' => $RightAgencyIDClient,
-                'PlanNetworkPath' => $RightNetwork->PlanNetworkPath . $NewRightNetworkPath
-            ]);
-
-            Client::where('IDClient', $RightNetwork->IDClient)->update([
-                'IDUpline' => $RightAgencyIDClient
-            ]);
-
-            $RightNetworks = PlanNetwork::where('PlanNetworkPath', 'like', '%' . $Client->IDClient . '-' . $RightNetwork->IDClient . '%')
-                ->whereNotIn('IDClient', [$LeftAgencyIDClient, $RightAgencyIDClient, $LeftLeftAgencyIDClient, $RightRightAgencyIDClient])
-                ->get();
-            foreach($RightNetworks as $network){
-                $PlanNetworkPath = $network->PlanNetworkPath;
-                $network->update([
-                    'ClientLevel' => $network->ClientLevel + 1,
-                    'PlanNetworkPath' => str_replace($Client->IDClient . '-', $Client->IDClient . $NewRightNetworkPath . '-', $PlanNetworkPath)
-                ]);
-            }
+            CreateFifthAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, true);
         }
 
         while ($Counter <= $AgencyNumber) {
@@ -3910,13 +3770,9 @@ class ClientController extends Controller
             $Counter++;
         }
 
-        $BatchNumber = "#UP" . $IDPlanProductUpgrade;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
+        $BatchNumber = generateBatchNumber($PlanNetwork);
+        AdjustLedger($Client, -$PlanProductUpgrade->UpgradePrice, 0, 0, 0, null, "WALLET", "UPGRADE", "PAYMENT", $BatchNumber);
 
-        AdjustLedger($Client, -$Amount, 0, 0, 0, Null, "WALLET", "PLAN_PRODUCT", "UPGRADE", $BatchNumber);
         CompanyLedger(26, $Amount, "Upgrade Bought by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
         $APICode = APICode::where('IDAPICode', 8)->first();

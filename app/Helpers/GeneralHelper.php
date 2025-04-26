@@ -259,124 +259,6 @@ function GetCoForClient($Client)
     }
 }
 
-function AdjustLedger($Client, $Amount, $RewardPoints, $ReferralPoints, $UplinePoints, $PlanNetwork, $Source, $Destination, $Type, $BatchNumber)
-{
-    $PlanProductPoints = 0;
-
-    if ($Destination == "PLAN_PRODUCT" && $Type != "UPGRADE") {
-        $PlanProduct = PlanProduct::find($PlanNetwork->IDPlanProduct);
-        $PlanProductPoints = $PlanProduct->PlanProductPoints;
-        $ChildPosition = $PlanNetwork->PlanNetworkPosition;
-        $ChildIDClient = $PlanNetwork->IDClient;
-    }
-
-    if ($Amount) {
-        $ClientLedger = new ClientLedger;
-        $ClientLedger->IDClient = $Client->IDClient;
-        $ClientLedger->ClientLedgerAmount = abs($Amount);
-        $ClientLedger->ClientLedgerPoints = 0;
-        $ClientLedger->ClientLedgerSource = $Source;
-        $ClientLedger->ClientLedgerDestination = $Destination;
-        $ClientLedger->ClientLedgerInitialeBalance = $Client->ClientBalance;
-        $ClientLedger->ClientLedgerFinalBalance = $Client->ClientBalance + $Amount;
-        $ClientLedger->ClientLedgerInitialePoints = 0;
-        $ClientLedger->ClientLedgerFinalPoints = 0;
-        $ClientLedger->ClientLedgerType = $Type;
-        $ClientLedger->ClientLedgerBatchNumber = $BatchNumber;
-        $ClientLedger->save();
-        $Client->ClientBalance = $Client->ClientBalance + $Amount;
-    }
-
-    if ($RewardPoints) {
-        $ClientLedger = new ClientLedger;
-        $ClientLedger->IDClient = $Client->IDClient;
-        $ClientLedger->ClientLedgerAmount = 0;
-        $ClientLedger->ClientLedgerPoints = abs($RewardPoints);
-        $ClientLedger->ClientLedgerSource = $Source;
-        $ClientLedger->ClientLedgerDestination = $Destination;
-        $ClientLedger->ClientLedgerInitialeBalance = 0;
-        $ClientLedger->ClientLedgerFinalBalance = 0;
-        $ClientLedger->ClientLedgerInitialePoints = $Client->ClientRewardPoints;
-        $ClientLedger->ClientLedgerFinalPoints = $Client->ClientRewardPoints + $RewardPoints;
-        $ClientLedger->ClientLedgerType = $Type;
-        $ClientLedger->ClientLedgerBatchNumber = $BatchNumber;
-        $ClientLedger->save();
-        $Client->ClientRewardPoints = $Client->ClientRewardPoints + $RewardPoints;
-    }
-
-    $Client->save();
-
-    if ($PlanNetwork) {
-        if ($PlanNetwork->IDReferralClient) {
-            $P_Client = Client::find($PlanNetwork->IDReferralClient);
-
-            if ($RewardPoints) {
-                $ClientLedger = new ClientLedger;
-                $ClientLedger->IDClient = $P_Client->IDClient;
-                $ClientLedger->ClientLedgerPoints = $ReferralPoints;
-                $ClientLedger->ClientLedgerSource = $Source;
-                $ClientLedger->ClientLedgerDestination = $Destination;
-                $ClientLedger->ClientLedgerInitialePoints = $P_Client->ClientRewardPoints;
-                $ClientLedger->ClientLedgerFinalPoints = $P_Client->ClientRewardPoints + $ReferralPoints;
-                $ClientLedger->ClientLedgerType = "REFERRAL";
-                $ClientLedger->ClientLedgerBatchNumber = $BatchNumber;
-                $ClientLedger->save();
-
-                $P_Client->ClientRewardPoints = $P_Client->ClientRewardPoints + $ReferralPoints;
-            }
-
-            $P_Client->save();
-        }
-
-        if ($PlanNetwork->PlanNetworkPath) {
-            $IDParentClients = explode("-", $PlanNetwork->PlanNetworkPath);
-            $IDParentClients = array_reverse($IDParentClients);
-            foreach ($IDParentClients as $IDParentClient) {
-                $Parent_Client = Client::find($IDParentClient);
-
-                if ($RewardPoints) {
-                    $ClientLedger = new ClientLedger;
-                    $ClientLedger->IDClient = $Parent_Client->IDClient;
-                    $ClientLedger->ClientLedgerPoints = $UplinePoints;
-                    $ClientLedger->ClientLedgerSource = $Source;
-                    $ClientLedger->ClientLedgerDestination = $Destination;
-                    $ClientLedger->ClientLedgerInitialePoints = $Parent_Client->ClientRewardPoints;
-                    $ClientLedger->ClientLedgerFinalPoints = $Parent_Client->ClientRewardPoints + $UplinePoints;
-                    $ClientLedger->ClientLedgerType = "UPLINE";
-                    $ClientLedger->ClientLedgerBatchNumber = $BatchNumber;
-                    $ClientLedger->save();
-
-                    $Parent_Client->ClientRewardPoints = $Parent_Client->ClientRewardPoints + $UplinePoints;
-                }
-
-                if ($PlanProductPoints) {
-                    if ($ChildPosition == "LEFT") {
-                        $Parent_Client->ClientLeftNumber++;
-                        $Parent_Client->ClientTotalNumber++;
-                        $Parent_Client->ClientLeftPoints = $Parent_Client->ClientLeftPoints + $PlanProductPoints;
-                        $Parent_Client->ClientTotalPoints = $Parent_Client->ClientTotalPoints + $PlanProductPoints;
-                    }
-                    if ($ChildPosition == "RIGHT") {
-                        $Parent_Client->ClientRightNumber++;
-                        $Parent_Client->ClientTotalNumber++;
-                        $Parent_Client->ClientRightPoints = $Parent_Client->ClientRightPoints + $PlanProductPoints;
-                        $Parent_Client->ClientTotalPoints = $Parent_Client->ClientTotalPoints + $PlanProductPoints;
-                    }
-                    PointsLedger($PlanProductPoints, $Parent_Client, $ChildIDClient, $ChildPosition, $BatchNumber);
-                }
-
-                $Parent_Client->save();
-                $ParentPlanNetwork = PlanNetwork::where("IDClient", $IDParentClient)->first();
-
-                if (!$ParentPlanNetwork) {
-                    return RespondWithBadRequest(35);
-                }
-
-                $ChildPosition = $ParentPlanNetwork->PlanNetworkPosition;
-            }
-        }
-    }
-}
 function ChequesLedger($Client, $Amount, $Source, $Destination, $Type, $BatchNumber)
 {
     $ClientLedger = new ClientLedger;
@@ -839,7 +721,7 @@ function CompanyLedger($IDSubCategory, $Amount, $Description, $Process, $Type)
     return $CompanyLedger;
 }
 
-function createAgencyClient($Parent, $Position, $Index): Client
+function createAgencyClient($Parent, $Position, $Index, $IDReferral = null, $IDUpline = null): Client
 {
     $firstName = explode(' ', $Parent->ClientName)[0];
     $NextIDClient = DB::select('SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE  TABLE_NAME = "clients"')[0]->AUTO_INCREMENT;
@@ -866,7 +748,11 @@ function createAgencyClient($Parent, $Position, $Index): Client
     return $AgencyClient;
 }
 
-function createAgencyPlanNetwork($ParentPlanNetwork, $Parent, $PlanProductID, $AgencyClient, $Position): PlanNetwork
+function createPlanNetwork(
+    $ParentPlanNetwork, $Parent, $PlanProductID,
+    $AgencyClient, $Position,
+    $PlanNetworkExpireDate = null, $PlanNetworkAgency = null, $PlanNetworkAgencyNumber = null
+): PlanNetwork
 {
     $AgencyPlanNetwork = new PlanNetwork;
     $AgencyPlanNetwork->IDClient = $AgencyClient->IDClient;
@@ -883,54 +769,238 @@ function createAgencyPlanNetwork($ParentPlanNetwork, $Parent, $PlanProductID, $A
         $AgencyPlanNetwork->PlanNetworkPath = $Parent->IDClient;
     }
     $AgencyPlanNetwork->PlanNetworkPosition = $Position;
-    $AgencyPlanNetwork->PlanNetworkExpireDate = $ParentPlanNetwork->PlanNetworkExpireDate;
+    $AgencyPlanNetwork->PlanNetworkExpireDate = $PlanNetworkExpireDate ?? $ParentPlanNetwork->PlanNetworkExpireDate;
+
+    if ($PlanNetworkAgency)
+        $AgencyPlanNetwork->PlanNetworkAgency = $PlanNetworkAgency;
+
+    if ($PlanNetworkAgencyNumber)
+        $AgencyPlanNetwork->PlanNetworkAgencyNumber = $PlanNetworkAgencyNumber;
+
     $AgencyPlanNetwork->save();
 
     return $AgencyPlanNetwork;
 }
 
-function generateRewardPoints($AgencyPlanNetwork, $Parent, $RewardPoints, $Position){
+function generateBatchNumber($AgencyPlanNetwork){
     $BatchNumber = "#PN" . $AgencyPlanNetwork->IDPlanNetwork;
     $TimeFormat = new DateTime('now');
     $Time = $TimeFormat->format('H');
     $Time = $Time . $TimeFormat->format('i');
     $BatchNumber = $BatchNumber . $Time;
-
-    AdjustLedger($Parent, 0, 0, 0, 0, $AgencyPlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
-    $Parent->{"Client" . ucfirst($Position) . "Points"} = $Parent->ClientLeftPoints + $RewardPoints;
-    $Parent->ClientTotalPoints = $Parent->ClientTotalPoints + $RewardPoints;
+    return $BatchNumber;
 }
 
-function CreateThirdAgencyClients($Client, $IDPlan, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $RewardPoints)
+function createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, $Position, $Index, $Points){
+    $AgencyClient = createAgencyClient($Client, $Position, $Index);
+    $AgencyClient->{"Client" . Str::ucfirst(Str::lower($Position)) . "Points"} += $Points;
+    $AgencyClient->ClientTotalPoints += $Points;
+    $AgencyClient->save();
+    $AgencyNetwork = createPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $AgencyClient, $Position, $PlanNetworkExpireDate);
+    $BatchNumber = generateBatchNumber($AgencyNetwork);
+    return [$BatchNumber, $AgencyClient, $AgencyNetwork];
+}
+
+function CreateOneAgencyClients($Client, $IDPlanProduct, $ParentPlanNetwork, $Upgrade = false)
 {
-    $LeftAgencyClient = createAgencyClient($Client, "LEFT", "002");
-    $LeftAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $LeftAgencyClient, "LEFT");
-    generateRewardPoints($LeftAgencyPlanNetwork, $Client, $RewardPoints, "LEFT");
-
-    $RightAgencyClient = createAgencyClient($Client, "RIGHT", "003");
-    $RightAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $RightAgencyClient, "RIGHT");
-    generateRewardPoints($RightAgencyPlanNetwork, $Client, $RewardPoints, "RIGHT");
-    return [$LeftAgencyPlanNetwork->IDClient, $RightAgencyClient->IDClient];
+    $PlanProduct = PlanProduct::where("IDPlanProduct", $IDPlanProduct)->first();
+    $PlanProductPoints = $PlanProduct->PlanProductPoints;
+    $AgencyNumber = $PlanProduct->AgencyNumber;
+    AdjustPlanNetworkParameters($Client, $PlanProductPoints, $AgencyNumber);
+    AdjustParentPlanNetworkParameters($ParentPlanNetwork, $Client->NetworkPosition, $Upgrade ? 0 : $PlanProductPoints);
 }
 
-function CreateFifthAgencyClients($Client, $IDPlan, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $RewardPoints){
-    $LeftAgencyClient = createAgencyClient($Client, "LEFT", "002");
-    $LeftAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $LeftAgencyClient, "LEFT");
-    generateRewardPoints($LeftAgencyPlanNetwork, $Client, $RewardPoints, "LEFT");
+function CreateThirdAgencyClients($Client, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $Upgrade = false)
+{
+    $PlanProduct = PlanProduct::where("IDPlanProduct", $IDPlanProduct)->first();
+    $PlanProductPoints = $PlanProduct->PlanProductPoints;
+    $AgencyNumber = $PlanProduct->AgencyNumber;
+    $Points = $PlanProductPoints / $AgencyNumber;
+    [$LeftBatchNumber, $LeftAgencyClient, $LeftAgencyNetwork] = createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "LEFT", "002", 0);
+    $LeftClients[] = $LeftAgencyClient->IDClient;
 
-    $RightAgencyClient = createAgencyClient($Client, "RIGHT", "003");
-    $RightAgencyPlanNetwork = createAgencyPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $RightAgencyClient, "RIGHT");
-    generateRewardPoints($RightAgencyPlanNetwork, $Client, $RewardPoints, "RIGHT");
+    [$RightBatchNumber, $RightAgencyClient, $RightAgencyNetwork] = createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "RIGHT", "003", 0);
+    $RightClients[] = $RightAgencyClient->IDClient;
 
-    $LeftLeftAgencyClient = createAgencyClient($LeftAgencyClient, "LEFT", "004");
-    $LeftLeftAgencyPlanNetwork = createAgencyPlanNetwork($LeftAgencyPlanNetwork, $LeftAgencyClient, $IDPlanProduct, $LeftLeftAgencyClient, "LEFT");
-    generateRewardPoints($LeftLeftAgencyPlanNetwork, $Client, $RewardPoints, "LEFT");
+    if ($Upgrade) {
+        UpgradeNetwork($Client, $RightClients, $LeftClients);
+        return;
+    }
 
-    $RightRightAgencyClient = createAgencyClient($RightAgencyClient, "RIGHT", "005");
-    $RightRightAgencyPlanNetwork = createAgencyPlanNetwork($RightAgencyPlanNetwork, $RightAgencyClient, $IDPlanProduct, $RightRightAgencyClient, "RIGHT");
-    generateRewardPoints($RightRightAgencyPlanNetwork, $Client, $RewardPoints, "RIGHT");
+    AdjustLedger($LeftAgencyClient, 0, 0, 0, 0, $LeftAgencyNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $LeftBatchNumber);
+    AdjustLedger($RightAgencyClient, 0, 0, 0, 0, $RightAgencyNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $RightBatchNumber);
+    AdjustPlanNetworkParameters($Client, $PlanProductPoints, $AgencyNumber);
+    AdjustParentPlanNetworkParameters($ParentPlanNetwork, $Client->NetworkPosition, $Upgrade ? 0 : $PlanProductPoints);
+}
 
-    return [
-        $LeftLeftAgencyPlanNetwork->IDClient, $RightAgencyPlanNetwork->IDClient, $LeftLeftAgencyPlanNetwork->IDClient, $RightRightAgencyClient->IDClient
-    ];
+
+function CreateFifthAgencyClients($Client, $IDPlanProduct, $ParentPlanNetwork, $PlanNetworkExpireDate, $Upgrade = false)
+{
+    $PlanProduct = PlanProduct::where("IDPlanProduct", $IDPlanProduct)->first();
+    $PlanProductPoints = $PlanProduct->PlanProductPoints;
+    $AgencyNumber = $PlanProduct->AgencyNumber;
+    $Points = $Upgrade ? 0 : $PlanProductPoints / $AgencyNumber;
+    $LeftClients = [];
+    [$LeftBatchNumber, $LeftAgencyClient, $LeftAgencyNetwork] = createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "LEFT", "002", $Points);
+    $LeftClients[] = $LeftAgencyClient->IDClient;
+    [$MostLeftBatchNumber, $MostLeftAgencyClient, $MostLeftAgencyNetwork] = createNode($LeftAgencyClient, $LeftAgencyNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "LEFT", "004", 0);
+    $LeftClients[] = $MostLeftAgencyClient->IDClient;
+
+    $RightClients = [];
+    [$RightBatchNumber, $RightAgencyClient, $RightAgencyNetwork] = createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "RIGHT", "003", $Points);
+    $RightClients[] = $RightAgencyClient->IDClient;
+    [$MostRightBatchNumber, $MostRightAgencyClient, $MostRightAgencyNetwork] = createNode($RightAgencyClient, $RightAgencyNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "RIGHT", "005", 0);
+    $RightClients[] = $MostRightAgencyClient->IDClient;
+
+    if ($Upgrade) {
+       UpgradeNetwork($Client, $RightClients, $LeftClients);
+       return;
+    }
+
+    AdjustLedger($Client, 0, 0, 0, 0, $MostLeftAgencyNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $MostLeftBatchNumber);
+    AdjustLedger($Client, 0, 0, 0, 0, $MostRightAgencyNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $MostRightBatchNumber);
+    AdjustPlanNetworkParameters($Client, $PlanProductPoints, $AgencyNumber);
+    AdjustParentPlanNetworkParameters($ParentPlanNetwork, $Client->NetworkPosition, $Upgrade ? 0 : $PlanProductPoints);
+}
+
+function UpgradeNetwork($Client, $RightAgencies, $LeftAgencies){
+
+    $LeftAgencyClientIDs = [];
+    $RightAgencyClientIDs = [];
+
+    $Agencies = Client::where(['AgencyFor' => $Client->IDClient])->whereNotIn('IDClient', [...$RightAgencies, ...$LeftAgencies])->get();
+
+    foreach ($Agencies as $Agency) {
+        $Position = Str::ucfirst(Str::lower($Agency->NetworkPosition));
+        ${$Position . "AgencyClientIDs"}[] = $Agency->IDClient;
+        $PlanNetwork = PlanNetwork::where(['IDClient' => $Agency->IDClient])->first();
+        $PlanNetworkAgency = $PlanNetwork->where(['IDPlanNetwork' => $PlanNetwork->IDPlanNetwork])->first();
+        $PlanNetworkAgency->delete();
+        $PlanNetwork->delete();
+        $Agency->delete();
+    }
+
+    $OldLeftNetworkPath = implode('-', $LeftAgencyClientIDs);
+    foreach (PlanNetwork::where('PlanNetworkPath', 'like', '%' . $OldLeftNetworkPath . '%')->get() as $Index => $LeftPlanNetwork) {
+        if ($Index == 0){
+            $ParentClient = Client::where(['IDClient' => last($LeftAgencies)])->first();
+            $LeftPlanNetwork->update([
+                'IDParentClient' => $ParentClient->IDClient,
+                'IDReferralClient' => $ParentClient->IDClient
+            ]);
+
+            $LeftPlanNetworkClient = Client::where(['IDClient' => $LeftPlanNetwork->IDClient])->first();
+            $LeftPlanNetworkClient->update([
+                'IDReferral' => $ParentClient->IDClient,
+                'IDUpline' => $ParentClient->IDClient
+            ]);
+        }
+
+        $NewLeftNetworkPath = str_replace($OldLeftNetworkPath, implode('-', $LeftAgencies), $LeftPlanNetwork->PlanNetworkPath);
+        $LeftPlanNetwork->update([
+            'PlanNetworkPath' => $NewLeftNetworkPath,
+            'ClientLevel' => $LeftPlanNetwork->ClientLevel + 1,
+        ]);
+    }
+
+    $OldRightNetworkPath = implode('-', $RightAgencyClientIDs);
+    foreach (PlanNetwork::where('PlanNetworkPath', 'like', '%' . $OldRightNetworkPath . '%')->get() as $Index => $RightPlanNetwork) {
+        $NewRightNetworkPath = str_replace($OldRightNetworkPath, implode('-', $RightAgencies), $RightPlanNetwork->PlanNetworkPath);
+        if ($Index == 0){
+            $ParentClient = Client::where(['IDClient' => last($RightAgencies)])->first();
+            $RightPlanNetwork->update([
+                'IDParentClient' => $ParentClient->IDClient,
+                'IDReferralClient' => $ParentClient->IDClient
+            ]);
+
+            $RightPlanNetworkClient = Client::where(['IDClient' => $RightPlanNetwork->IDClient])->first();
+            $RightPlanNetworkClient->update([
+                'IDReferral' => $ParentClient->IDClient,
+                'IDUpline' => $ParentClient->IDClient
+            ]);
+        }
+
+        $RightPlanNetwork->update([
+            'PlanNetworkPath' => $NewRightNetworkPath,
+            'ClientLevel' => $RightPlanNetwork->ClientLevel + 1,
+        ]);
+    }
+
+}
+
+function AdjustPlanNetworkParameters($Client, $PlanProductPoints, $AgencyNumber){
+    $Points = $PlanProductPoints / $AgencyNumber;
+
+    $ChildrenNumber = ($AgencyNumber - 1) / 2;
+    $Client->ClientLeftPoints += $Points * $ChildrenNumber;
+    $Client->ClientRightPoints += $Points * $ChildrenNumber;
+    $Client->ClientTotalPoints += $Points * $ChildrenNumber * 2;
+
+    $Client->save();
+}
+
+function AdjustParentPlanNetworkParameters($ParentPlanNetwork, $Position, $PlanProductPoints, $AgencyNumber = 1){
+    $IDParentClients = explode('-', $ParentPlanNetwork->PlanNetworkPath);
+    $IDParentClients = array_reverse($IDParentClients);
+    $Position = Str::ucfirst(Str::lower($Position));
+
+    foreach ($IDParentClients as $IDParentClient){
+        $Client = Client::find($IDParentClient);
+//        echo "Client: " . $Client->ClientName . ", IDClient: " . $Client->IDClient . ", Plan Product Points: " . $PlanProductPoints . "\n";
+        $Client->{'Client' . $Position . 'Points'} += $PlanProductPoints;
+        $Client->ClientTotalPoints += $PlanProductPoints;
+//        echo "Client Total Points: " . $Client->ClientTotalPoints . ", Client Left Points: " . $Client->ClientLeftPoints . ", Client Right Points: " . $Client->ClientRightPoints . " After\n";
+
+
+        $Client->{'Client' . $Position . 'Number'} += $AgencyNumber;
+        $Client->ClientTotalNumber += $AgencyNumber;
+//        echo "Client Total Number: " . $Client->ClientTotalNumber . ", Client Right Number: " . $Client->ClientRightNumber . ", Client Left Number: " . $Client->ClientLeftNumber . " After\n";
+        $Client->save();
+
+        $Position = Str::ucfirst(Str::lower($Client->NetworkPosition));
+
+//        echo "------------------------------------\n";
+    }
+}
+
+function GenerateClientLedger($Client, $Amount, $Points, $Source, $Destination, $Type, $BatchNumber){
+    $ClientLedger = new ClientLedger;
+    $ClientLedger->IDClient = $Client->IDClient;
+    $ClientLedger->ClientLedgerAmount = abs($Amount);
+    $ClientLedger->ClientLedgerPoints = abs($Points);
+    $ClientLedger->ClientLedgerSource = $Source;
+    $ClientLedger->ClientLedgerDestination = $Destination;
+    if ($Amount) {
+        $ClientLedger->ClientLedgerInitialeBalance = $Client->ClientBalance;
+        $ClientLedger->ClientLedgerFinalBalance = $Client->ClientBalance + $Amount;
+    }
+    if ($Points) {
+        $ClientLedger->ClientLedgerInitialePoints = $Client->ClientRewardPoints;
+        $ClientLedger->ClientLedgerFinalPoints = $Client->ClientRewardPoints + $Points;
+    }
+    $ClientLedger->ClientLedgerType = $Type;
+    $ClientLedger->ClientLedgerBatchNumber = $BatchNumber;
+    $ClientLedger->save();
+}
+
+function AmountLegder($Client, $Amount, $Source, $Destination, $Type, $BatchNumber){
+    if ($Amount) {
+        GenerateClientLedger($Client, $Amount, 0, $Source, $Destination, $Type, $BatchNumber);
+        $Client->refresh();
+        $Client->ClientBalance = $Client->ClientBalance + $Amount;
+        $Client->save();
+    }
+}
+
+function RewardPointsLedger($Client, $RewardPoints, $Source, $Destination, $Type, $BatchNumber){
+    GenerateClientLedger($Client, 0, $RewardPoints, $Source, $Destination, $Type, $BatchNumber);
+    $Client->refresh();
+    $Client->ClientRewardPoints = $Client->ClientRewardPoints + $RewardPoints;
+    $Client->save();
+}
+
+function AdjustLedger($Client, $Amount, $RewardPoints, $ReferralPoints, $UplinePoints, $PlanNetwork, $Source, $Destination, $Type, $BatchNumber)
+{
+    AmountLegder($Client, $Amount, $Source, $Destination, $Type, $BatchNumber);
+    RewardPointsLedger($Client, $RewardPoints, $Source, $Destination, $Type, $BatchNumber);
 }
