@@ -1200,6 +1200,9 @@ class ClientController extends Controller
         $IDArea = $request->IDArea;
         $ClientImages = $request->ClientImages;
         $ClientVideos = $request->ClientVideos;
+        $ClientLongitude = $request->ClientLongitude;
+        $ClientLatitude = $request->ClientLatitude;
+        $ClientCurrentAddress = $request->ClientCurrentAddress;
 
         $IDAPICode = 8;
         $ImageExtArray = ["jpeg", "jpg", "png", "svg"];
@@ -1210,6 +1213,15 @@ class ClientController extends Controller
                     return RespondWithBadRequest(15);
                 }
             }
+        }
+
+        if ($ClientLongitude && $ClientLatitude) {
+            $Client->ClientLatitude = $ClientLatitude;
+            $Client->ClientLongitude = $ClientLongitude;
+        }
+
+        if ($ClientCurrentAddress){
+            $ClientLongitude->ClientCurrentAddress = $ClientCurrentAddress;
         }
 
         if ($ClientName) {
