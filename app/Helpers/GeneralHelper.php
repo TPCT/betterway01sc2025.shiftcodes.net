@@ -721,7 +721,7 @@ function CompanyLedger($IDSubCategory, $Amount, $Description, $Process, $Type)
     return $CompanyLedger;
 }
 
-function createAgencyClient($Parent, $Position, $Index, $IDReferral = null, $IDUpline = null): Client
+function createAgencyClient($Parent, $Position, $Index, $IDReferral = null, $IDUpline = null, $AgencyFor = null): Client
 {
     $firstName = explode(' ', $Parent->ClientName)[0];
     $NextIDClient = DB::select('SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE  TABLE_NAME = "clients"')[0]->AUTO_INCREMENT;
@@ -741,7 +741,7 @@ function createAgencyClient($Parent, $Position, $Index, $IDReferral = null, $IDU
     $AgencyClient->ClientPrivacy = $Parent->ClientPrivacy;
     $AgencyClient->VerificationCode = CreateVerificationCode();
     $AgencyClient->ClientType = "Agency";
-    $AgencyClient->AgencyFor = $Parent->IDClient;
+    $AgencyClient->AgencyFor = $AgencyFor ?? $Parent->IDClient;
     $AgencyClient->ClientStatus = "Active";
     $AgencyClient->save();
 
@@ -791,8 +791,8 @@ function generateBatchNumber($AgencyPlanNetwork){
     return $BatchNumber;
 }
 
-function createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, $Position, $Index, $Points){
-    $AgencyClient = createAgencyClient($Client, $Position, $Index);
+function createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, $Position, $Index, $Points, $AgencyFor = null){
+    $AgencyClient = createAgencyClient($Client, $Position, $Index, null, null, $AgencyFor);
     $AgencyClient->{"Client" . Str::ucfirst(Str::lower($Position)) . "Points"} += $Points;
     $AgencyClient->ClientTotalPoints += $Points;
     $AgencyClient->save();
@@ -843,13 +843,13 @@ function CreateFifthAgencyClients($Client, $IDPlanProduct, $ParentPlanNetwork, $
     $LeftClients = [];
     [$LeftBatchNumber, $LeftAgencyClient, $LeftAgencyNetwork] = createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "LEFT", "002", $Points);
     $LeftClients[] = $LeftAgencyClient->IDClient;
-    [$MostLeftBatchNumber, $MostLeftAgencyClient, $MostLeftAgencyNetwork] = createNode($LeftAgencyClient, $LeftAgencyNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "LEFT", "004", 0);
+    [$MostLeftBatchNumber, $MostLeftAgencyClient, $MostLeftAgencyNetwork] = createNode($LeftAgencyClient, $LeftAgencyNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "LEFT", "004", 0, $Client->IDClient);
     $LeftClients[] = $MostLeftAgencyClient->IDClient;
 
     $RightClients = [];
     [$RightBatchNumber, $RightAgencyClient, $RightAgencyNetwork] = createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "RIGHT", "003", $Points);
     $RightClients[] = $RightAgencyClient->IDClient;
-    [$MostRightBatchNumber, $MostRightAgencyClient, $MostRightAgencyNetwork] = createNode($RightAgencyClient, $RightAgencyNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "RIGHT", "005", 0);
+    [$MostRightBatchNumber, $MostRightAgencyClient, $MostRightAgencyNetwork] = createNode($RightAgencyClient, $RightAgencyNetwork, $IDPlanProduct, $PlanNetworkExpireDate, "RIGHT", "005", 0, $Client->IDClient);
     $RightClients[] = $MostRightAgencyClient->IDClient;
 
     if ($Upgrade) {
