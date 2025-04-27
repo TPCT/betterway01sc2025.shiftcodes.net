@@ -3876,7 +3876,7 @@ class ClientController extends Controller
             [
                 [
                     'IDClient' => $Client->IDClient,
-                    'ClientName' => explode(' ', trim($Client->ClientName))[0] . '  001',
+                    'ClientName' => explode(' ', trim($Client->ClientName))[0] . ' 001',
                 ]
             ],
             $ClientAgencies->toArray()
