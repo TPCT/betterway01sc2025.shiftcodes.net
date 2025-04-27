@@ -1185,6 +1185,8 @@ class ClientController extends Controller
     public function UpdateProfile(Request $request)
     {
         $Client = auth('client')->user();
+        var_dump($ClientLongitude, $ClientLatitude, $ClientCurrentAddress );
+
         if (!$Client) {
             return RespondWithBadRequest(10);
         }
@@ -1204,7 +1206,6 @@ class ClientController extends Controller
         $ClientLatitude = $request->ClientLatitude;
         $ClientCurrentAddress = $request->ClientCurrentAddress;
 
-        var_dump($ClientLongitude, $ClientLatitude, $ClientCurrentAddress );
 
         $IDAPICode = 8;
         $ImageExtArray = ["jpeg", "jpg", "png", "svg"];
