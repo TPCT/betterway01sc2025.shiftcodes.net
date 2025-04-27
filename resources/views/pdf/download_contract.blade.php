@@ -59,7 +59,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <p> ويمثله بالعقد: </p>
         </div>
-        <h2 style="text-align: right;">ثانيا: السيد (ة): {{ $referral->ClientNameArabic ?? ''}} <span> .. </span>
+        <h2 style="text-align: right;"> السيد (ة):{{ $referral->ClientNameArabic ?? ''}} <span> .. </span>
             الجنسية: {{ $referral->getNationality() ?? ''  }}</h2>
         <p>ويحمل بطاقة/ جواز سفر رقم: {{ $referral->ClientNationalID ? $referral->ClientNationalID :  $referral->ClientPassport }}</p>
         <div style="display: flex; justify-content: space-between; align-items: center;">
