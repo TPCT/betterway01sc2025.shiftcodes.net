@@ -11,6 +11,7 @@ class PlanNetworkResource extends JsonResource
 
     public function toArray($request)
     {
+        var_dump($this);
         $Client = auth('client')->user();
         $ClientLanguage = LocalAppLanguage($Client->ClientAppLanguage);
         $ClientPrivacy = $this->ClientPrivacy;

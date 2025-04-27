@@ -2247,9 +2247,6 @@ class ClientController extends Controller
             ])
             ->get();
 
-        var_dump($ChildrenNetwork->toArray());
-        exit;
-
 
         foreach ($ChildrenNetwork as $Child) {
             $SubChildrenNetwork = PlanNetwork::leftjoin("clients as c1", "c1.IDClient", "plannetwork.IDClient")
