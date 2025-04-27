@@ -3566,9 +3566,8 @@ class ClientController extends Controller
         $IDReferral = $Client->IDReferral;
         $PlanNetworkPosition = $Client->NetworkPosition;
 
-        $ParentClient = Client::find($IDUpline);
-        $ReferralClient = Client::find($IDReferral);
-        $IDReferralClient = $ReferralClient->IDClient;
+        $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
+        $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
 
         if (!$IDReferral && !$ParentClient) {
             return RespondWithBadRequest(1);
@@ -3585,7 +3584,7 @@ class ClientController extends Controller
 
             $PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath;
             $PlanNetworkPath = explode("-", $PlanNetworkPath);
-            if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferralClient) {
+            if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferral) {
                 return RespondWithBadRequest(33);
             }
 
@@ -3681,7 +3680,6 @@ class ClientController extends Controller
         elseif ($PlanProduct->AgencyNumber == 5)
             CreateFifthAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate);
 
-//        DB::rollBack();
         return RespondWithSuccessRequest(8);
     }
 

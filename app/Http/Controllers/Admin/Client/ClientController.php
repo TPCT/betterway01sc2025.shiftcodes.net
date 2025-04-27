@@ -556,91 +556,48 @@ class ClientController extends Controller
     public function ClientNetworkAdd(Request $request)
     {  
         $Admin = auth('user')->user();
-        $IDClient = $request->IDClient;
         $IDPlanProduct = $request->IDPlanProduct;
+        $PlanProduct = PlanProduct::where("PlanProductStatus", "ACTIVE")->where("IDPlanProduct", $IDPlanProduct)->first();
 
-        $PlanNetworkPosition = $request->PlanNetworkPosition;
-        if (!$IDClient) {
-            return RespondWithBadRequest(505);
-        }
-        if (!$IDPlanProduct) {
-            return RespondWithBadRequest(506);
-        }
-        if (!$PlanNetworkPosition) {
-            return RespondWithBadRequest(507);
-        }
-        if ($request->Filled('Referral')) {
-            $Referral = $request->Referral;
-        } else {
-            return RespondWithBadRequest(55);
+        if (!$PlanProduct) {
+            return RespondWithBadRequest(1);
         }
 
-        if ($request->Filled('Upline')) {
-            $Upline = $request->Upline;
-        } else {
-            $Upline = NULL;
+        $IDClient = $Client->IDClient;
+        $IDUpline = $Client->Upline;
+        $IDReferral = $Client->Referral;
+        $PlanNetworkPosition = $Client->PlanNetworkPosition;
+
+
+        $Client = Client::where(['IDClient' => $request->IDClient, 'ClientStatus' => 'ACTIVE'])->first();
+        if (!$Client) {
+            return RespondWithBadRequest(10);
+        }
+        $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
+        $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
+
+        if (!$IDReferral && !$ParentClient) {
+            return RespondWithBadRequest(1);
         }
 
-        if ($request->Filled('PlanNetworkPosition')) {
-            $PlanNetworkPosition = $request->PlanNetworkPosition;
-        } else {
-            $PlanNetworkPosition = "LEFT";
+        $ClientPlanNetwork = PlanNetwork::where("IDClient", $IDClient)->first();
+        if ($ClientPlanNetwork) {
+            return RespondWithBadRequest(25);
         }
 
-        if ($Upline) {
-            if ($Upline[0] == "0") {
-                $Upline = "+2" . $Upline;
-            }
-        }
-
-        if ($Referral[0] == "0") {
-            $Referral = "+2" . $Referral;
-        }
-
-        if ($Upline) {
-            $ParentClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Upline) {
-                $query->where('ClientAppID', $Upline)
-                    ->orwhere('ClientEmail', $Upline)
-                    ->orwhere(
-                        'ClientPhone',
-                        $Upline[0] == "0" ? "+2" . $Upline : $Upline
-                    );
-            })->first();
-
-            if (!$ParentClient) {
-                return RespondWithBadRequest(23);
-            }
-        } else {
-            $IDParentClient = Null;
-        }
-
-
-        $ReferralClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Referral) {
-            $query->where('ClientAppID', $Referral)
-                ->orwhere('ClientEmail', $Referral)
-                ->orwhere(
-                    'ClientPhone',
-                    $Referral[0] == "0" ? "+2" . $Referral : $Referral
-                );
-        })->first();
-
-        if (!$ReferralClient) {
-            return RespondWithBadRequest(23);
-        }
-
-        $IDReferralClient = $ReferralClient->IDClient;
-        $Client = Client::find($IDClient);
-
-        if ($Upline) {
+        if ($ParentClient) {
             $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
-            $IDParentClient = $ParentClient->IDClient;
+            $IDParentClient = $IDUpline;
+
             $PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath;
             $PlanNetworkPath = explode("-", $PlanNetworkPath);
-            if (in_array($ParentClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferralClient) {
+            if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferral) {
                 return RespondWithBadRequest(33);
             }
 
-            $ParentNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->count();
+            $ParentNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)
+                ->where("IDPlanNetwork", "!=", $ParentPlanNetwork->IDPlanNetwork)->count();
+
             $ParentPositionNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->count();
             $ChildNumber = $ParentPlanNetwork->PlanNetworkAgencyNumber * 2;
             if ($ParentNetwork == $ChildNumber) {
@@ -649,39 +606,19 @@ class ClientController extends Controller
             if ($ParentPositionNetwork == $ParentPlanNetwork->PlanNetworkAgencyNumber) {
                 return RespondWithBadRequest(34);
             }
-            if (count($PlanNetworkPath) === 3) {
-                $CoPosition = Position::whereRaw('LOWER(`PositionTitleEn`) = ?', ['co'])->first();
-                if ($CoPosition)
-                    $Client->IDPosition = $CoPosition->IDPosition;
+
+            $AgencyNumber = 1;
+            if ($ParentPlanNetwork->PlanNetworkAgencyNumber != 1) {
+                while ($AgencyNumber <= $ParentPlanNetwork->PlanNetworkAgencyNumber) {
+                    $ParentNetwork = PlanNetwork::where("IDParentClient", $IDParentClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->where("PlanNetworkAgency", $AgencyNumber)->first();
+                    if (!$ParentNetwork) {
+                        break;
+                    }
+                    $AgencyNumber++;
+                }
             }
         }
-        $PlanProduct = PlanProduct::find($IDPlanProduct);
-        if (!$PlanProduct) {
-            return RespondWithBadRequest(203);
-        }
-
-        $IDPlan = $PlanProduct->IDPlan;
-
-        if ($ReferralClient[0] == "0") {
-            $ReferralClient = "+2" . $ReferralClient;
-        }
-
-
-        $IDReferral = $ReferralClient->IDClient;
-
-        if ($Upline) {
-            $ParentClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Upline) {
-                $query->where('ClientAppID', $Upline)
-                    ->orwhere('ClientEmail', $Upline)
-                    ->orwhere(
-                        'ClientPhone',
-                        $Upline[0] == "0" ? "+2" . $Upline : $Upline
-                    );
-            })->first();
-            if (!$Upline) {
-                return RespondWithBadRequest(23);
-            }
-        } else {
+        else {
             $Key = $IDReferral . "-";
             $SecondKey = $IDReferral . "-";
             $ThirdKey = "-" . $IDReferral;
@@ -698,7 +635,6 @@ class ClientController extends Controller
 
             if (!count($AllNetwork)) {
                 $ParentPlanNetwork = PlanNetwork::leftjoin("planproducts", "planproducts.IDPlanProduct", "plannetwork.IDPlanProduct")->where("plannetwork.IDClient", $IDReferral)->first();
-                $IDParentClient = $IDReferral;
             } else {
                 $ParentPlanNetwork = PlanNetwork::where("PlanNetworkPosition", "LEFT")->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
                     $query->where("PlanNetworkPath", 'like', $IDReferral . '%')
@@ -706,45 +642,6 @@ class ClientController extends Controller
                         ->orwhere("PlanNetworkPath", 'like', '%' . $SecondKey . '%')
                         ->orwhere("PlanNetworkPath", 'like', '%' . $ThirdKey . '%');
                 })->orderby("ClientLevel", "DESC")->first();
-
-                $IDParentClient = $ParentPlanNetwork->IDClient;
-                $ParentClient = Client::find($IDParentClient);
-            }
-        }
-
-        $ClientPlanNetwork = PlanNetwork::where("IDClient", $IDClient)->first();
-        if ($ClientPlanNetwork) {
-            return RespondWithBadRequest(25);
-        }
-
-        $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
-        $IDParentClient = $ParentClient->IDClient;
-        $IDReferralClient = $ReferralClient->IDClient;
-
-        $PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath;
-        $PlanNetworkPath = explode("-", $PlanNetworkPath);
-        if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferralClient) {
-            return RespondWithBadRequest(33);
-        }
-
-        $ParentNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->count();
-        $ParentPositionNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->count();
-        $ChildNumber = $ParentPlanNetwork->PlanNetworkAgencyNumber * 2;
-        if ($ParentNetwork == $ChildNumber) {
-            return RespondWithBadRequest(24);
-        }
-        if ($ParentPositionNetwork == $ParentPlanNetwork->PlanNetworkAgencyNumber) {
-            return RespondWithBadRequest(34);
-        }
-
-        $AgencyNumber = 1;
-        if ($ParentPlanNetwork->PlanNetworkAgencyNumber != 1) {
-            while ($AgencyNumber <= $ParentPlanNetwork->PlanNetworkAgencyNumber) {
-                $ParentNetwork = PlanNetwork::where("IDParentClient", $IDParentClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->where("PlanNetworkAgency", $AgencyNumber)->first();
-                if (!$ParentNetwork) {
-                    break;
-                }
-                $AgencyNumber++;
             }
         }
 
@@ -754,27 +651,17 @@ class ClientController extends Controller
         $PlanNetworkExpireDate = $Date->add(new DateInterval('PT' . $PlanNetworkExpireDate . 'S'));
         $PlanNetworkExpireDate = $PlanNetworkExpireDate->format('Y-m-d H:i:s');
 
-        $PlanNetwork = new PlanNetwork;
-        $PlanNetwork->IDClient = $IDClient;
-        $PlanNetwork->IDPlan = $IDPlan;
+        $PlanNetwork = createPlanNetwork(
+            $ParentPlanNetwork, $ParentClient,
+            $IDPlanProduct, $Client,
+            $PlanNetworkPosition, $PlanNetworkExpireDate,
+            $AgencyNumber, $PlanProduct->AgencyNumber
+        );
 
-        $PlanNetwork->IDPlanProduct = $IDPlanProduct;
-        $PlanNetwork->IDParentClient = $IDParentClient;
-        $PlanNetwork->IDReferralClient = $IDReferralClient;
-        $PlanNetwork->ClientLevel = $ParentPlanNetwork->ClientLevel + 1;
-        if ($ParentPlanNetwork->PlanNetworkPath) {
-            $PlanNetwork->PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath . "-" . $IDParentClient;
-        } else {
-            $PlanNetwork->PlanNetworkPath = $IDParentClient;
-        }
-        $PlanNetwork->PlanNetworkPosition = $PlanNetworkPosition;
-        $PlanNetwork->PlanNetworkAgency = $AgencyNumber;
-        $PlanNetwork->PlanNetworkAgencyNumber = $PlanProduct->AgencyNumber;
-        $PlanNetwork->PlanNetworkExpireDate = $PlanNetworkExpireDate;
-        $PlanNetwork->save();
 
         $AgencyNumber = $PlanProduct->AgencyNumber;
         $Counter = 1;
+
         while ($Counter <= $AgencyNumber) {
             $PlanNetworkAgencyName = "0" . $Counter;
             $PlanNetworkAgency = new PlanNetworkAgency;
@@ -785,30 +672,19 @@ class ClientController extends Controller
             $Counter++;
         }
 
+        CompanyLedger(21, $PlanProduct->PlanProductPrice, "Product Bought by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
-        $Client->IDReferral = $IDReferralClient;
-        $Client->IDUpline = $IDParentClient;
-        $Client->NetworkPosition = $PlanNetworkPosition;
         $Client->ClientStatus = "ACTIVE";
+        $Client->save();
+        $BatchNumber = generateBatchNumber($PlanNetwork);
+        AdjustLedger($Client, 0, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
 
-        $BatchNumber = "#PN" . $PlanNetwork->IDPlanNetwork;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-
-        $ClientPointsFromProduct = ceil($PlanProduct->PlanProductRewardPoints / $PlanProduct->AgencyNumber);
-        $PointsForAgencies = $PlanProduct->PlanProductRewardPoints - $ClientPointsFromProduct;
-        $AgencyPointsFromProduct = $PointsForAgencies / $PlanProduct->AgencyNumber;
-
-        AdjustLedger($Client, 0, $ClientPointsFromProduct, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
-
-        $Desc = "Client Network was added";
-        ActionBackLog($Admin->IDUser, $IDClient, "EDIT_CLIENT", $Desc);
-
-        if ($PlanProduct->AgencyNumber == 3) {
-            CreateThirdAgencyClients($Client, $IDPlan, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate, $AgencyPointsFromProduct);
-        }
+        if ($PlanProduct->AgencyNumber == 1)
+            CreateOneAgencyClients($Client, $IDPlanProduct, $PlanNetwork);
+        elseif ($PlanProduct->AgencyNumber == 3)
+            CreateThirdAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate);
+        elseif ($PlanProduct->AgencyNumber == 5)
+            CreateFifthAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate);
 
         return RespondWithSuccessRequest(8);
     }
