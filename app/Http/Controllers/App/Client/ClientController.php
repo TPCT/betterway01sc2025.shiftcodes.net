@@ -2239,7 +2239,7 @@ class ClientController extends Controller
             ->leftjoin("clients as c2", "c2.IDClient", "plannetwork.IDReferralClient")
             ->where("plannetwork.IDParentClient", $IDParentClient)
             ->where("plannetwork.IDClient", "!=", $IDParentClient)
-//            ->where("plannetwork.PlanNetworkAgency", $AgencyNumber)
+            ->where("plannetwork.PlanNetworkAgency", $AgencyNumber)
             ->select([
                 "plannetwork.PlanNetworkPosition", "c1.IDClient", "c1.IDPosition",
                 "c1.ClientName", "c1.ClientPhone", "c1.ClientAppID", "c1.ClientPrivacy",
