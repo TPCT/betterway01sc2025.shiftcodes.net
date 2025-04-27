@@ -58,13 +58,20 @@
         <p>والكائن مقرها 28 شارع مكرم عبيد – مدينه نصر</p>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <p> ويمثله بالعقد: </p>
-            <storng style="font-weight: bold;">(طرف اول - بائع)</storng>
         </div>
         <h2 style="text-align: right;">ثانيا: السيد (ة): {{ $referral->ClientNameArabic ?? ''}} <span> .. </span>
             الجنسية: {{ $referral->getNationality() ?? ''  }}</h2>
         <p>ويحمل بطاقة/ جواز سفر رقم: {{ $referral->ClientNationalID ? $referral->ClientNationalID :  $referral->ClientPassport }}</p>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <p>والمقيم: {{ $referral->ClientCurrentAddress ?? '' }}</p>
+            <storng style="font-weight: bold;">(طرف اول - بائع)</storng>
+        </div>
+
+        <h2 style="text-align: right;">ثانيا: السيد (ة): {{ $client->ClientNameArabic ?? ''}} <span> .. </span>
+            الجنسية: {{ $client->getNationality() ?? ''  }}</h2>
+        <p>ويحمل بطاقة/ جواز سفر رقم: {{ $referral->ClientNationalID ? $referral->ClientNationalID :  $referral->ClientPassport }}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <p>والمقيم: {{ $client->ClientCurrentAddress ?? '' }}</p>
             <storng style="font-weight: bold;"> (طرف ثاني مشتري)</storng>
         </div>
 
@@ -157,7 +164,7 @@
     <div class="signature" style="flex: 1;">
         <h3>الطرف الثاني (المشتري)</h3>
         <p>الاسم : {{$client->ClientNameArabic ?? ''}}</p>
-        <p>التوقيع : {{$client->ClientNameArabic ?? ''}}</p>
+        <p>التوقيع : </p>
         <p>رقم القومي : {{$client->ClientNationalID ? $client->ClientNationalID :  $client->ClientPassport}}</p>
     </div>
 </div>
