@@ -146,8 +146,8 @@ class Client extends Authenticatable implements JWTSubject
     }
     public function getClientAgenciesAttribute()
     {
-        return PlanNetworkAgency::where('IDPlanNetwork', $this->planNetwork->IDPlanNetwork)->get();
-//        return Client::where("AgencyFor", $this->IDClient)->get();
+//        return PlanNetworkAgency::where('IDPlanNetwork', $this->planNetwork->IDPlanNetwork)->get();
+        return Client::where("AgencyFor", $this->IDClient)->get();
     }
     
 
