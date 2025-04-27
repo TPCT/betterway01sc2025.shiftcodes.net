@@ -740,6 +740,7 @@ function createAgencyClient($Parent, $Position, $Index, $IDReferral = null, $IDU
     $AgencyClient->ClientPassword = $Parent->ClientPassword;
     $AgencyClient->ClientPrivacy = $Parent->ClientPrivacy;
     $AgencyClient->VerificationCode = CreateVerificationCode();
+    $AgencyClient->ClientPicture = $Parent->ClientPicture;
     $AgencyClient->ClientType = "Agency";
     $AgencyClient->AgencyFor = $AgencyFor ?? $Parent->IDClient;
     $AgencyClient->ClientStatus = "Active";
