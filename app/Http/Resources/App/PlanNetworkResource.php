@@ -16,10 +16,10 @@ class PlanNetworkResource extends JsonResource
         $ClientPrivacy = $this->ClientPrivacy;
         $ClientContact = $this->ClientPhone;
         $ClientPicture = $this->ClientPicture;
-//        if ($ClientPrivacy) {
-//            $ClientContact = $this->ClientAppID;
-//            $ClientPicture = Null;
-//        }
+        if ($ClientPrivacy) {
+            $ClientContact = $this->ClientAppID;
+            $ClientPicture = Null;
+        }
         $PositionName = "Networker";
         $Position = Position::find($this->IDPosition);
         if ($Position) {
