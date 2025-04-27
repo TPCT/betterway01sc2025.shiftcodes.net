@@ -75,6 +75,8 @@ class ClientResource extends JsonResource
             'ReferralPhone'          => ($this->ReferralPhone) ? $this->ReferralPhone : '',
             'ClientDocuments'        => $this->ClientDocuments ? $this->ClientDocuments : [],
             'ClientGallery'          => $this->ClientGallery ? $this->ClientGallery : [],
+            'ClientLongitude'        => $this->ClientLongitude,
+            'ClientLatitude'         => $this->ClientLatitude,
             'RegisterDate'           => $this->created_at,
         ];
     }
