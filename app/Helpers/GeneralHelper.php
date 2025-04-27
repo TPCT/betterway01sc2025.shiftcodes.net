@@ -751,7 +751,7 @@ function createAgencyClient($Parent, $Position, $Index, $IDReferral = null, $IDU
 function createPlanNetwork(
     $ParentPlanNetwork, $Parent, $PlanProductID,
     $AgencyClient, $Position,
-    $PlanNetworkExpireDate = null, $PlanNetworkAgency = null, $PlanNetworkAgencyNumber = null
+    $PlanNetworkExpireDate = null, $PlanNetworkAgency = null, $PlanNetworkAgencyNumber = null, $IDReferralClient=null
 ): PlanNetwork
 {
     $AgencyPlanNetwork = new PlanNetwork;
@@ -759,7 +759,7 @@ function createPlanNetwork(
     $AgencyPlanNetwork->IDPlan = $ParentPlanNetwork->IDPlanNetwork;
     $AgencyPlanNetwork->IDPlanProduct = $PlanProductID;
     $AgencyPlanNetwork->IDParentClient = $Parent->IDClient;
-    $AgencyPlanNetwork->IDReferralClient = $Parent->IDClient;
+    $AgencyPlanNetwork->IDReferralClient = $IDReferralClient ?? $Parent->IDClient;
     $AgencyPlanNetwork->ClientLevel = $ParentPlanNetwork->ClientLevel + 1;
 
 
@@ -796,7 +796,7 @@ function createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExp
     $AgencyClient->{"Client" . Str::ucfirst(Str::lower($Position)) . "Points"} += $Points;
     $AgencyClient->ClientTotalPoints += $Points;
     $AgencyClient->save();
-    $AgencyNetwork = createPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $AgencyClient, $Position, $PlanNetworkExpireDate);
+    $AgencyNetwork = createPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $AgencyClient, $Position, $PlanNetworkExpireDate, $AgencyFor);
     $BatchNumber = generateBatchNumber($AgencyNetwork);
     return [$BatchNumber, $AgencyClient, $AgencyNetwork];
 }
