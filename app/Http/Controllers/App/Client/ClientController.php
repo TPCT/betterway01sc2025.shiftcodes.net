@@ -2420,14 +2420,7 @@ class ClientController extends Controller
         $UserName = $request->UserName;
         $IDReferral = $request->IDReferral;
         if (!$Type) {
-            $Clients = Client::where(function ($query) use ($UserName) {
-                $query->where("ClientPhone", 'like', '%' . $UserName . '%')
-                    ->orwhere("ClientAppID", 'like', '%' . $UserName . '%')
-                    ->where("clients.ClientDeleted", 0);
-            })
-                ->whereNull('AgencyFor')
-                ->select("IDClient", "ClientName", "ClientPicture", "ClientPhone", "ClientAppID", "ClientPrivacy")
-                ->get();
+            $Clients = Client::where("ClientPhone", 'like', '%' . $UserName . '%')->orwhere("ClientAppID", 'like', '%' . $UserName . '%')->where("clients.ClientDeleted", 0)->select("IDClient", "ClientName", "ClientPicture", "ClientPhone", "ClientAppID", "ClientPrivacy")->get();
             foreach ($Clients as $Client) {
                 if ($Client->ClientPrivacy) {
                     $Client->ClientPicture = '';
@@ -2437,7 +2430,7 @@ class ClientController extends Controller
             }
         } else {
             if ($Type == "REFERRAL") {
-                $Clients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
+                $InitialClients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
                     ->where("clients.ClientDeleted", 0)
                     ->where(function ($query) use ($UserName) {
                         $query->where('clients.ClientName', 'like', '%' . $UserName . '%')
@@ -2445,14 +2438,41 @@ class ClientController extends Controller
                             ->orWhere('clients.ClientEmail', 'like', '%' . $UserName . '%')
                             ->orWhere('clients.ClientPhone', 'like', '%' . $UserName . '%');
                     })
-                    ->whereNull('clients.AgencyFor')
-                    ->select("clients.IDClient",
+                    ->select("clients.IDClient")
+                    ->get()
+                    ->pluck('IDClient')
+                    ->toArray();
+
+                $AdditionalClients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
+                    ->where("clients.ClientDeleted", 0)
+                    ->whereIn('clients.AgencyFor', $InitialClients)
+                    ->select(
+                        "clients.IDClient",
                         "clients.ClientName",
                         "clients.ClientPicture",
                         "clients.ClientType",
+                        "clients.AgencyFor",
                         "clients.ClientPhone",
                         "clients.ClientAppID",
-                        "clients.ClientPrivacy")
+                        "clients.ClientPrivacy"
+                    )
+                    ->get();
+
+                $AllClientIds = array_unique(array_merge($InitialClients, $AdditionalClients->pluck('IDClient')->toArray()));
+
+                $Clients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
+                    ->where("clients.ClientDeleted", 0)
+                    ->whereIn("clients.IDClient", $AllClientIds)
+                    ->select(
+                        "clients.IDClient",
+                        "clients.ClientName",
+                        "clients.ClientPicture",
+                        "clients.ClientType",
+                        "clients.AgencyFor",
+                        "clients.ClientPhone",
+                        "clients.ClientAppID",
+                        "clients.ClientPrivacy"
+                    )
                     ->get();
             }
             if ($Type == "UPLINE") {
@@ -2470,21 +2490,18 @@ class ClientController extends Controller
                 $Clients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
                     ->where("clients.ClientDeleted", 0)
                     ->whereIn("clients.IDClient", $AllNetwork)
-                    ->whereNull('clients.AgencyFor')
+                    ->orWhereIn('clients.IDClient', function ($query) use ($AllNetwork) {
+                        $query->select('AgencyFor')
+                            ->from('clients')
+                            ->whereIn('AgencyFor', $AllNetwork);
+                    })
                     ->where(function ($query) use ($UserName) {
                         $query->where('clients.ClientName', 'like', '%' . $UserName . '%')
                             ->orWhere('clients.ClientAppID', 'like', '%' . $UserName . '%')
                             ->orWhere('clients.ClientEmail', 'like', '%' . $UserName . '%')
                             ->orWhere('clients.ClientPhone', 'like', '%' . $UserName . '%');
                     })
-                    ->select("clients.IDClient",
-                        "clients.ClientName",
-                        "clients.ClientPicture",
-                        "clients.ClientType",
-                        "clients.ClientPhone",
-                        "clients.ClientAppID",
-                        "clients.ClientPrivacy"
-                    )
+                    ->select("clients.IDClient", "clients.ClientName", "clients.ClientPicture", "clients.ClientType", "clients.AgencyFor", "clients.ClientPhone", "clients.ClientAppID", "clients.ClientPrivacy")
                     ->get();
             }
         }
