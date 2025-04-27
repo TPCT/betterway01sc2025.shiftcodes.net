@@ -1759,6 +1759,7 @@ class ClientController extends Controller
         $BrandProductPoints = $request->BrandProductPoints;
         $ClientLatitude = $request->ClientLatitude;
         $ClientLongitude = $request->ClientLongitude;
+
         $OrderBy = "IDBrandProduct";
         if ($BrandProductPoints) {
             $OrderBy = "BrandProductPoints";
@@ -4429,6 +4430,7 @@ class ClientController extends Controller
 
         $data = [
             'client' => $Client,
+            'referral' => Client::find($Client->IDReferral),
             'date' => $carbonDate->format('Y-m-d'), // Format date as string
             'day' => $day,
         ];
