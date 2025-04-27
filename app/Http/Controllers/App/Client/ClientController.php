@@ -2247,6 +2247,8 @@ class ClientController extends Controller
             ])
             ->get();
 
+        var_dump($ChildrenNetwork->toArray());
+        exit;
 
 
         foreach ($ChildrenNetwork as $Child) {
