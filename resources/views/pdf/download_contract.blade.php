@@ -159,7 +159,7 @@
         <h3>الطرف الأول (الشركه)</h3>
         <p>الاسم : {{$referral->ClientNameArabic}}</p>
         <p>التوقيع :</p>
-        <p>رقم القومي : {{$referral->ClientNationalID ? $client->ClientNationalID :  $client->ClientPassport}}</p>
+        <p>رقم القومي : {{$referral->ClientNationalID ? $referral->ClientNationalID :  $referral->ClientPassport}}</p>
     </div>
     <div class="signature" style="flex: 1;">
         <h3>الطرف الثاني (المشتري)</h3>
