@@ -20,6 +20,7 @@ class ClientsCheckResource extends JsonResource
             $Client = Client::find($this->AgencyFor);
             if ($Client) {
                 $ClientPhone = $Client->ClientPhone;
+                $ClientEmail = $Client->ClientEmail;
             }
         }
 

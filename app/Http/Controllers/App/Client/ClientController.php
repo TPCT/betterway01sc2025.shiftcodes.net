@@ -2414,6 +2414,91 @@ class ClientController extends Controller
         return $Response;
     }
 
+    public function ClientUserNameCheck(Request $request)
+    {
+        $Type = $request->Type;
+        $UserName = $request->UserName;
+        $IDReferral = $request->IDReferral;
+        if (!$Type) {
+            $Clients = Client::where(function ($query) use ($UserName) {
+                $query->where("ClientPhone", 'like', '%' . $UserName . '%')
+                    ->orwhere("ClientAppID", 'like', '%' . $UserName . '%')
+                    ->where("clients.ClientDeleted", 0);
+            })
+                ->whereNull('AgencyFor')
+                ->select("IDClient", "ClientName", "ClientPicture", "ClientPhone", "ClientAppID", "ClientPrivacy")
+                ->get();
+            foreach ($Clients as $Client) {
+                if ($Client->ClientPrivacy) {
+                    $Client->ClientPicture = '';
+                } else {
+                    $Client->ClientPicture = ($Client->ClientPicture) ? asset($Client->ClientPicture) : '';
+                }
+            }
+        } else {
+            if ($Type == "REFERRAL") {
+                $Clients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
+                    ->where("clients.ClientDeleted", 0)
+                    ->where(function ($query) use ($UserName) {
+                        $query->where('clients.ClientName', 'like', '%' . $UserName . '%')
+                            ->orWhere('clients.ClientAppID', 'like', '%' . $UserName . '%')
+                            ->orWhere('clients.ClientEmail', 'like', '%' . $UserName . '%')
+                            ->orWhere('clients.ClientPhone', 'like', '%' . $UserName . '%');
+                    })
+                    ->whereNull('clients.AgencyFor')
+                    ->select("clients.IDClient",
+                        "clients.ClientName",
+                        "clients.ClientPicture",
+                        "clients.ClientType",
+                        "clients.ClientPhone",
+                        "clients.ClientAppID",
+                        "clients.ClientPrivacy")
+                    ->get();
+            }
+            if ($Type == "UPLINE") {
+                if (!$IDReferral)
+                    return RespondWithBadRequest(1);
+
+                $AllNetwork = PlanNetwork::where("PlanNetworkPath", 'like', $IDReferral . '%')
+                    ->orWhere("PlanNetworkPath", 'like', "%" . "-{$IDReferral}" . '%')
+                    ->get()
+                    ->pluck("IDClient")
+                    ->toArray();
+
+                array_push($AllNetwork, $IDReferral);
+
+                $Clients = PlanNetwork::leftJoin("clients", "clients.IDClient", "plannetwork.IDClient")
+                    ->where("clients.ClientDeleted", 0)
+                    ->whereIn("clients.IDClient", $AllNetwork)
+                    ->whereNull('clients.AgencyFor')
+                    ->where(function ($query) use ($UserName) {
+                        $query->where('clients.ClientName', 'like', '%' . $UserName . '%')
+                            ->orWhere('clients.ClientAppID', 'like', '%' . $UserName . '%')
+                            ->orWhere('clients.ClientEmail', 'like', '%' . $UserName . '%')
+                            ->orWhere('clients.ClientPhone', 'like', '%' . $UserName . '%');
+                    })
+                    ->select("clients.IDClient",
+                        "clients.ClientName",
+                        "clients.ClientPicture",
+                        "clients.ClientType",
+                        "clients.ClientPhone",
+                        "clients.ClientAppID",
+                        "clients.ClientPrivacy"
+                    )
+                    ->get();
+            }
+        }
+
+
+        $APICode = APICode::where('IDAPICode', 8)->first();
+        $Response = array(
+            'Success' => true,
+            'ApiMsg' => __('apicodes.' . $APICode->IDApiCode),
+            'ApiCode' => $APICode->IDApiCode,
+            'Response' => ClientsCheckResource::collection($Clients)
+        );
+        return $Response;
+    }
 
     public function ClientTransferCheck(Request $request)
     {
