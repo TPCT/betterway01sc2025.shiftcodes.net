@@ -69,7 +69,7 @@
 
         <h2 style="text-align: right;">ثانيا: السيد (ة): {{ $client->ClientNameArabic ?? ''}} <span> .. </span>
             الجنسية: {{ $client->getNationality() ?? ''  }}</h2>
-        <p>ويحمل بطاقة/ جواز سفر رقم: {{ $ref$clienterral->ClientNationalID ? $client->ClientNationalID :  $client->ClientPassport }}</p>
+        <p>ويحمل بطاقة/ جواز سفر رقم: {{ $client->ClientNationalID ? $client->ClientNationalID :  $client->ClientPassport }}</p>
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <p>والمقيم: {{ $client->ClientCurrentAddress ?? '' }}</p>
             <storng style="font-weight: bold;"> (طرف ثاني مشتري)</storng>
