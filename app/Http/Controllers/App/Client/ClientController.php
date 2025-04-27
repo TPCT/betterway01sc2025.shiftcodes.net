@@ -1169,7 +1169,7 @@ class ClientController extends Controller
             "ClientNationalID" => $Client->ClientNationalID,
             "ClientPrivacy" => $Client->ClientPrivacy,
             'ClientBalance' => $Client->ClientBalance,
-            "ClientGender" => $Client->ClientGender,
+            "ClientGender" => Str::ucfirst(Str::lower($Client->ClientGender)),
             "ClientNationalIDImage" => $Client->ClientNationalIDImage,
             "ClientContract" => $Client->ClientContract,
             "PositionName" => $PositionName,
