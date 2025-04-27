@@ -796,7 +796,7 @@ function createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExp
     $AgencyClient->{"Client" . Str::ucfirst(Str::lower($Position)) . "Points"} += $Points;
     $AgencyClient->ClientTotalPoints += $Points;
     $AgencyClient->save();
-    $AgencyNetwork = createPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $AgencyClient, $Position, $PlanNetworkExpireDate, $AgencyFor);
+    $AgencyNetwork = createPlanNetwork($ParentPlanNetwork, $Client, $IDPlanProduct, $AgencyClient, $Position, $PlanNetworkExpireDate, null, null, $AgencyFor);
     $BatchNumber = generateBatchNumber($AgencyNetwork);
     return [$BatchNumber, $AgencyClient, $AgencyNetwork];
 }
