@@ -3879,12 +3879,7 @@ class ClientController extends Controller
                     'ClientName' => explode(' ', trim($Client->ClientName))[0] . '  001',
                 ]
             ],
-            $ClientAgencies->transform(function ($client){
-                return [
-                    'IDClient' => $client->IDClient,
-                    'ClientName' => $client->ClientName
-                ];
-            })->toArray()
+            $ClientAgencies
         )
         ];
 
