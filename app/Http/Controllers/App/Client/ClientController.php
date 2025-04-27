@@ -723,8 +723,6 @@ class ClientController extends Controller
 
     public function ClientLogin(Request $request)
     {
-        $phone = str_replace('+2', '', $request->input('UserName'));
-
         $this->validate($request, [
             'UserName' => ['required'],
         ]);
@@ -739,8 +737,8 @@ class ClientController extends Controller
         if (!$Client) {
             $this->validateClientLogin($request);
 
-
             $Credentials = $this->prepareCredentials($request);
+            var_dump($Credentials);
             $tokenData = CreateToken($Credentials, 'client');
 
             if (!$tokenData) {
