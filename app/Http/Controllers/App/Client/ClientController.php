@@ -3671,7 +3671,7 @@ class ClientController extends Controller
         $Client->save();
         $BatchNumber = generateBatchNumber($PlanNetwork);
         AdjustLedger($Client, -$PlanProduct->PlanProductPrice, 0, 0, 0, $PlanNetwork, "WALLET", "PLAN_PRODUCT", "PAYMENT", $BatchNumber);
-        AdjustLedger($Client, 0, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
+        AdjustLedger($Client, $PlanProduct->PlanProductPrice, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
 
         if ($PlanProduct->AgencyNumber == 1)
             CreateOneAgencyClients($Client, $IDPlanProduct, $PlanNetwork);

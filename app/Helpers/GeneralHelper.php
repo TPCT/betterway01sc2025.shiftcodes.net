@@ -985,7 +985,7 @@ function GenerateClientLedger($Client, $Amount, $Points, $Source, $Destination, 
 }
 
 function AmountLegder($Client, $Amount, $Source, $Destination, $Type, $BatchNumber){
-    if ($Amount) {
+    if ($Amount && $Type == "PAYMENT") {
         GenerateClientLedger($Client, $Amount, 0, $Source, $Destination, $Type, $BatchNumber);
         $Client->refresh();
         $Client->ClientBalance = $Client->ClientBalance + $Amount;
@@ -993,15 +993,17 @@ function AmountLegder($Client, $Amount, $Source, $Destination, $Type, $BatchNumb
     }
 }
 
-function RewardPointsLedger($Client, $RewardPoints, $Source, $Destination, $Type, $BatchNumber){
-    GenerateClientLedger($Client, 0, $RewardPoints, $Source, $Destination, $Type, $BatchNumber);
-    $Client->refresh();
-    $Client->ClientRewardPoints = $Client->ClientRewardPoints + $RewardPoints;
-    $Client->save();
+function RewardPointsLedger($Client, $Amount, $RewardPoints, $Source, $Destination, $Type, $BatchNumber){
+    if ($RewardPoints && $Type == "REWARD"){
+        GenerateClientLedger($Client, $Amount, $RewardPoints, $Source, $Destination, $Type, $BatchNumber);
+        $Client->refresh();
+        $Client->ClientRewardPoints = $Client->ClientRewardPoints + $RewardPoints;
+        $Client->save();
+    }
 }
 
 function AdjustLedger($Client, $Amount, $RewardPoints, $ReferralPoints, $UplinePoints, $PlanNetwork, $Source, $Destination, $Type, $BatchNumber)
 {
     AmountLegder($Client, $Amount, $Source, $Destination, $Type, $BatchNumber);
-    RewardPointsLedger($Client, $RewardPoints, $Source, $Destination, $Type, $BatchNumber);
+    RewardPointsLedger($Client, $Amount, $RewardPoints, $Source, $Destination, $Type, $BatchNumber);
 }
