@@ -13,7 +13,7 @@ class PlanNetworkResource extends JsonResource
     {
         $Client = auth('client')->user();
         $ClientLanguage = LocalAppLanguage($Client->ClientAppLanguage);
-        $ClientPrivacy = $this->ClientPrivacy;
+        $ClientPrivacy = $this->AgencyFor == $Client->IDClient ? 0 : $this->ClientPrivacy;
         $ClientContact = $this->ClientPhone;
         $ClientPicture = $this->ClientPicture;
         if ($ClientPrivacy) {

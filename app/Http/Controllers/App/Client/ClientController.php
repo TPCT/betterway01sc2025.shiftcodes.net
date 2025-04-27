@@ -2243,7 +2243,8 @@ class ClientController extends Controller
             ->select([
                 "plannetwork.PlanNetworkPosition", "c1.IDClient", "c1.IDPosition",
                 "c1.ClientName", "c1.ClientPhone", "c1.ClientAppID", "c1.ClientPrivacy",
-                "c1.ClientPicture", "c1.ClientLeftPoints", "c1.ClientRightPoints", "c2.ClientName as ReferralName"
+                "c1.ClientPicture", "c1.ClientLeftPoints", "c1.ClientRightPoints", "c2.ClientName as ReferralName",
+                'c1.AgencyFor'
             ])
             ->get();
 
@@ -2256,7 +2257,8 @@ class ClientController extends Controller
                 ->select([
                     "plannetwork.PlanNetworkPosition", "c1.IDClient", "c1.IDPosition", "c1.ClientName", "c1.ClientPhone",
                     "c1.ClientAppID", "c1.ClientPrivacy", "c1.ClientPicture", "c1.ClientLeftPoints",
-                    "c1.ClientRightPoints", "c2.ClientName as ReferralName"
+                    "c1.ClientRightPoints", "c2.ClientName as ReferralName",
+                    'c1.AgencyFor'
                 ])->get();
             $SubChildrenNetwork = PlanNetworkResource::collection($SubChildrenNetwork);
             $Child->ChildrenNetwork = $SubChildrenNetwork;
