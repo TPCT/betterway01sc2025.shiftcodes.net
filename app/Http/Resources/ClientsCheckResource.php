@@ -29,6 +29,7 @@ class ClientsCheckResource extends JsonResource
             "ClientName" => $this->ClientName,
             "ClientPicture" => $this->ClientPicture,
             "ClientPhone" => $ClientPhone,
+            "ClientEmail" => $ClientEmail,
             "ClientAppID" => $this->ClientAppID,
             "ClientPrivacy" => $this->ClientPrivacy
         ];
