@@ -1221,7 +1221,7 @@ class ClientController extends Controller
         }
 
         if ($ClientCurrentAddress){
-            $ClientLongitude->ClientCurrentAddress = $ClientCurrentAddress;
+            $Client->ClientCurrentAddress = $ClientCurrentAddress;
         }
 
         if ($ClientName) {
