@@ -738,7 +738,6 @@ class ClientController extends Controller
             $this->validateClientLogin($request);
 
             $Credentials = $this->prepareCredentials($request);
-            var_dump($Credentials);
             $tokenData = CreateToken($Credentials, 'client');
 
             if (!$tokenData) {
@@ -1283,13 +1282,13 @@ class ClientController extends Controller
 
             $Client->ClientPhone = $ClientPhone;
             $Client->ClientPhoneFlag = $ClientPhoneFlag;
-            $Client->ClientStatus = "INACTIVE";
+            $Client->ClientStatus = "ACTIVE";
             $Client->VerificationCode = CreateVerificationCode();
-            JWTAuth::invalidate(JWTAuth::getToken());
-            $IDAPICode = 18;
+//            JWTAuth::invalidate(JWTAuth::getToken());
+//            $IDAPICode = 18;
 
-            $Message = "رمز التحقق: " . $Client->VerificationCode;
-            $To = substr($ClientPhone, 1); //Removes + in Phone Number
+//            $Message = "رمز التحقق: " . $Client->VerificationCode;
+//            $To = substr($ClientPhone, 1); //Removes + in Phone Number
             // SMSMsegat($To, $Message);
         }
         $Client->save();
