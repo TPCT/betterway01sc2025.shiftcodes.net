@@ -11,12 +11,12 @@ class PlanNetworkResource extends JsonResource
 
     public function toArray($request)
     {
-        var_dump($this);
         $Client = auth('client')->user();
         $ClientLanguage = LocalAppLanguage($Client->ClientAppLanguage);
         $ClientPrivacy = $this->ClientPrivacy;
         $ClientContact = $this->ClientPhone;
         $ClientPicture = $this->ClientPicture;
+        var_dump($ClientPicture);
         if ($ClientPrivacy) {
             $ClientContact = $this->ClientAppID;
             $ClientPicture = Null;
