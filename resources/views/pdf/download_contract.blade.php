@@ -157,9 +157,9 @@
        <div class="signatures" style="display: flex; justify-content: space-between;">
     <div class="signature" style="flex: 1;">
         <h3>الطرف الأول (الشركه)</h3>
-        <p>الاسم :</p>
+        <p>الاسم : {{$referral->ClientNameArabic}}</p>
         <p>التوقيع :</p>
-        <p>رقم القومي :</p>
+        <p>رقم القومي : {{$referral->ClientNationalID ? $client->ClientNationalID :  $client->ClientPassport}}</p>
     </div>
     <div class="signature" style="flex: 1;">
         <h3>الطرف الثاني (المشتري)</h3>
