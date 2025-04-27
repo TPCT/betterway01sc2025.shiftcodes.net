@@ -860,7 +860,7 @@ class ClientController extends Controller
             'ClientPicture' => $Client->ClientPicture ? asset($Client->ClientPicture) : '',
             'ClientCoverImage' => $Client->ClientCoverImage ? asset($Client->ClientCoverImage) : '',
             'ClientStatus' => $Client->ClientStatus,
-            'FlowStatus' => 'HOME',
+            'FlowStatus' => $FlowStatus,
             'ClientBalance' => $Client->ClientBalance,
             'ClientGender' => $Client->ClientGender,
             'PositionName' => $PositionName,
