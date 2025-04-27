@@ -224,7 +224,7 @@ class BrandController extends Controller
         $ClientBrandProduct = ClientBrandProduct::leftjoin("brandproducts", "brandproducts.IDBrandProduct", "clientbrandproducts.IDBrandProduct")->leftjoin("subcategories", "subcategories.IDSubCategory", "brandproducts.IDSubCategory")->leftjoin("brands", "brands.IDBrand", "brandproducts.IDBrand");
         $ClientBrandProduct = $ClientBrandProduct->where("clientbrandproducts.ClientBrandProductSerial", $ClientBrandProductSerial);
         $ClientBrandProduct = $ClientBrandProduct->where("brandproducts.IDBrand", $User->IDBrand);
-        $ClientBrandProduct = $ClientBrandProduct->select("clientbrandproducts.IDClientBrandProduct", "clientbrandproducts.IDClient", "clientbrandproducts.ClientBrandProductSerial", "clientbrandproducts.ClientBrandProductStatus", "clientbrandproducts.created_at", "clientbrandproducts.updated_at", "brandproducts.IDBrandProduct", "brandproducts.IDBrand", "brandproducts.BrandProductTitleEn", "brandproducts.BrandProductTitleAr", "brandproducts.BrandProductDescEn", "brandproducts.BrandProductDescAr", "brandproducts.BrandProductPrice", "brandproducts.BrandProductDiscount", "brandproducts.BrandProductPoints", "brandproducts.BrandProductStatus", "brandproducts.BrandProductStartDate", "brandproducts.BrandProductEndDate", "brandproducts.created_at", "brands.BrandNameEn", "brands.BrandNameAr", "brands.BrandLogo", "brands.BrandRating", "subcategories.SubCategoryNameEn", "subcategories.SubCategoryNameAr");
+        $ClientBrandProduct = $ClientBrandProduct->select("clientbrandproducts.IDClientBrandProduct", "clientbrandproducts.IDClient", "clientbrandproducts.ClientBrandProductSerial", "clientbrandproducts.ClientBrandProductStatus", "clientbrandproducts.created_at", "clientbrandproducts.updated_at", "brandproducts.IDBrandProduct", "brandproducts.IDBrand", "brandproducts.BrandProductTitleEn", "brandproducts.BrandProductTitleAr", "brandproducts.BrandProductDescEn", "brandproducts.BrandProductPrice", "brandproducts.BrandProductDescAr", "brandproducts.BrandProductPrice", "brandproducts.BrandProductDiscount", "brandproducts.BrandProductPoints", "brandproducts.BrandProductStatus", "brandproducts.BrandProductStartDate", "brandproducts.BrandProductEndDate", "brandproducts.created_at", "brands.BrandNameEn", "brands.BrandNameAr", "brands.BrandLogo", "brands.BrandRating", "subcategories.SubCategoryNameEn", "subcategories.SubCategoryNameAr");
         $ClientBrandProduct = $ClientBrandProduct->first();
 
         if (!$ClientBrandProduct) {
@@ -290,7 +290,7 @@ class BrandController extends Controller
         $Time = $TimeFormat->format('H');
         $Time = $Time . $TimeFormat->format('i');
         $BatchNumber = $BatchNumber . $Time;
-        AdjustLedger($Client, 0, $BrandProduct->BrandProductPoints, 0, 0, Null, "BRAND_PRODUCT", "CASH", "PAYMENT", $BatchNumber);
+        AdjustLedger($Client, $ClientBrandProduct->BrandProductPrice, $BrandProduct->BrandProductPoints, 0, 0, Null, "BRAND_PRODUCT", "CASH", "REWARD", $BatchNumber);
 
         $ClientReviews = BrandRating::where("IDClient", $Client->IDClient)->where("IDBrand", $BrandProduct->brand->IDBrand)->get();
 

@@ -3257,7 +3257,7 @@ class ClientController extends Controller
 
         AdjustLedger($Client, -$Amount, 0, 0, 0, $PlanNetwork, "WALLET", "EVENT", "PAYMENT", $BatchNumber);
         if ($EventAttendee->EventAttendeeStatus == "PAID") {
-            AdjustLedger($Client, 0, $EventPoints, 0, 0, $PlanNetwork, "EVENT", "WALLET", "REWARD", $BatchNumber);
+            AdjustLedger($Client, $Amount, $EventPoints, 0, 0, $PlanNetwork, "EVENT", "WALLET", "REWARD", $BatchNumber);
         }
         CompanyLedger(23, $Amount, "Event Payment by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
@@ -3405,7 +3405,7 @@ class ClientController extends Controller
         $Time = $Time . $TimeFormat->format('i');
         $BatchNumber = $BatchNumber . $Time;
         AdjustLedger($Client, -$Tool->ToolPrice, 0, 0, 0, $PlanNetwork, "WALLET", "TOOL", "PAYMENT", $BatchNumber);
-        AdjustLedger($Client, 0, $Tool->ToolPoints, 0, 0, $PlanNetwork, "TOOL", "WALLET", "REWARD", $BatchNumber);
+        AdjustLedger($Client, $Tool->ToolPrice, $Tool->ToolPoints, 0, 0, $PlanNetwork, "TOOL", "WALLET", "REWARD", $BatchNumber);
 
         CompanyLedger(20, $Tool->ToolPrice, "Tool bought by client " . $Client->ClientName, "AUTO", "CREDIT");
 
