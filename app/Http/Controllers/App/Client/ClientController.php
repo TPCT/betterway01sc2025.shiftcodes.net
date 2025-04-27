@@ -1204,6 +1204,8 @@ class ClientController extends Controller
         $ClientLatitude = $request->ClientLatitude;
         $ClientCurrentAddress = $request->ClientCurrentAddress;
 
+        var_dump($ClientLongitude, $ClientLatitude, $ClientCurrentAddress );
+
         $IDAPICode = 8;
         $ImageExtArray = ["jpeg", "jpg", "png", "svg"];
 
