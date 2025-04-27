@@ -792,7 +792,7 @@ function generateBatchNumber($AgencyPlanNetwork){
 }
 
 function createNode($Client, $ParentPlanNetwork, $IDPlanProduct, $PlanNetworkExpireDate, $Position, $Index, $Points, $AgencyFor = null){
-    $AgencyClient = createAgencyClient($Client, $Position, $Index, $AgencyFor, null, $AgencyFor);
+    $AgencyClient = createAgencyClient($Client, $Position, $Index, $AgencyFor, $Client->IDClient, $AgencyFor);
     $AgencyClient->{"Client" . Str::ucfirst(Str::lower($Position)) . "Points"} += $Points;
     $AgencyClient->ClientTotalPoints += $Points;
     $AgencyClient->save();
