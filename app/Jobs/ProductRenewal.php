@@ -51,7 +51,7 @@ class ProductRenewal implements ShouldQueue
                 $Time = $Time . $TimeFormat->format('i');
                 $BatchNumber = $BatchNumber . $Time;
 
-                AdjustLedger($Client, -$Amount, 0, 0, 0, Null, "WALLET", "PLAN_PRODUCT", "PAYMENT", $BatchNumber);
+                AdjustLedger($Client, -$Amount, 0, 0, 0, Null, "WALLET: " . $Client->ClientName, "PLAN PRODUCT: " . $PlanProduct->PlanProductTitleEn, "PAYMENT", $BatchNumber);
 
                 $CompanyLedger = new CompanyLedger;
                 $CompanyLedger->IDSubCategory = 25;

@@ -676,8 +676,8 @@ class ClientController extends Controller
 
         $Client->ClientStatus = "ACTIVE";
         $Client->save();
-        $BatchNumber = generateBatchNumber($PlanNetwork);
-        AdjustLedger($Client, 0, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
+        $BatchNumber = GenerateBatch("PN", $PlanNetwork->IDPlanNetwork);
+        AdjustLedger($Client, 0, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN PRODUCT: " . $PlanProduct->PlanProductNameEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
 
         if ($PlanProduct->AgencyNumber == 1)
             CreateOneAgencyClients($Client, $IDPlanProduct, $PlanNetwork);
@@ -923,44 +923,17 @@ class ClientController extends Controller
         if ($Client) {
             $firstClient = Client::orderBy('IDClient', 'asc')->first();
             if ($Client->IDClient === $firstClient->IDClient) {
-                $BatchNumber = "#SA" . $IDClient;
-                $TimeFormat = new DateTime('now');
-                $Time = $TimeFormat->format('H');
-                $Time = $Time . $TimeFormat->format('i');
-                $BatchNumber = $BatchNumber . $Time;
+                $BatchNumber = GenerateBatch("SA", $IDClient);
                 $Desc = "Client balance changed from  " . $Client->ClientBalance . " to " . $Client->ClientBalance + $Amount;
-                if ($Amount >= 0) {
-                    AdjustLedger($Client, $Amount, 0, 0, 0, Null, "ADMIN", "WALLET", "ADJUST", $BatchNumber);
-                } else {
-                    AdjustLedger($Client, $Amount, 0, 0, 0, Null, "WALLET", "ADMIN", "ADJUST", $BatchNumber);
-                }
+                AdjustLedger($Client, $Amount, 0, 0, 0, Null, "ADMIN: " . $Admin->UserName, "WALLET: " . $Client->ClientName, "ADJUST", $BatchNumber);
             } else {
                 if ($firstClient->ClientBalance >= $Amount) {
-                    // Give Client
-                    $BatchNumber = "#SA" . $IDClient;
-                    $TimeFormat = new DateTime('now');
-                    $Time = $TimeFormat->format('H');
-                    $Time = $Time . $TimeFormat->format('i');
-                    $BatchNumber = $BatchNumber . $Time;
+                    $BatchNumber = GenerateBatch("SA", $IDClient);
                     $Desc = "Client balance changed from  " . $Client->ClientBalance . " to " . $Client->ClientBalance + $Amount;
-                    if ($Amount >= 0) {
-                        AdjustLedger($Client, $Amount, 0, 0, 0, Null, "ADMIN", "WALLET", "ADJUST", $BatchNumber);
-                    } else {
-                        AdjustLedger($Client, $Amount, 0, 0, 0, Null, "WALLET", "ADMIN", "ADJUST", $BatchNumber);
-                    }
+                    AdjustLedger($Client, $Amount, 0, 0, 0, Null, "ADMIN: " . $Admin->UserName, "WALLET: " . $Client->ClientName, "ADJUST", $BatchNumber);
 
-                    // Decrease First Client Balance
-                    $BatchNumber = "#SA" . $firstClient->IDClient;
-                    $TimeFormat = new DateTime('now');
-                    $Time = $TimeFormat->format('H');
-                    $Time = $Time . $TimeFormat->format('i');
-                    $BatchNumber = $BatchNumber . $Time;
-                    $Desc = "Client balance changed from  " . $firstClient->ClientBalance . " to " . $firstClient->ClientBalance - $Amount;
-                    if ($Amount >= 0) {
-                        AdjustLedger($firstClient, -$Amount, 0, 0, 0, Null, "ADMIN", "WALLET", "ADJUST", $BatchNumber);
-                    } else {
-                        AdjustLedger($firstClient, -$Amount, 0, 0, 0, Null, "WALLET", "ADMIN", "ADJUST", $BatchNumber);
-                    }
+                    $BatchNumber = GenerateBatch("SA", $firstClient->IDClient);
+                    AdjustLedger($firstClient, -$Amount, 0, 0, 0, Null, "ADMIN: " . $Admin->UserName, "WALLET: " . $Client->ClientName, "ADJUST", $BatchNumber);
                 } else {
                     return RespondWithBadRequest(26);
                 }
@@ -988,18 +961,9 @@ class ClientController extends Controller
         }
 
         $Client = Client::find($IDClient);
-        $BatchNumber = "#SA" . $IDClient;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
+        $BatchNumber = GenerateBatch("SA", $IDClient);
         $Desc = "Client points changed from  " . $Client->ClientRewardPoints . " to " . $Client->ClientRewardPoints + $Amount;
-        if ($Amount >= 0) {
-            AdjustLedger($Client, 0, $Amount, 0, 0, Null, "ADMIN", "WALLET", "ADJUST", $BatchNumber);
-        } else {
-            AdjustLedger($Client, 0, $Amount, 0, 0, Null, "WALLET", "ADMIN", "ADJUST", $BatchNumber);
-        }
-
+        AdjustLedger($Client, 0, $Amount, 0, 0, Null, "ADMIN: " . $Admin->UserName, "WALLET: " . $Client->ClientName, "ADJUST", $BatchNumber);
         ActionBackLog($Admin->IDUser, $Client->IDClient, "EDIT_CLIENT", $Desc);
         return RespondWithSuccessRequest(8);
     }

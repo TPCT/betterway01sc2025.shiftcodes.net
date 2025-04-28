@@ -2578,8 +2578,6 @@ class ClientController extends Controller
             return RespondWithBadRequest(38);
         }
 
-        $MainClient = $Client->IDClient;
-
         $BalanceTransfer = new BalanceTransfer;
         $BalanceTransfer->IDSender = $Client->IDClient;
         $BalanceTransfer->IDReceiver = $Receiver->IDClient;
@@ -2587,22 +2585,9 @@ class ClientController extends Controller
         $BalanceTransfer->TransferStatus = "ACCEPTED";
         $BalanceTransfer->save();
 
-        $BatchNumber = "#TR" . $BalanceTransfer->IDBalanceTransfer;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-         AdjustLedger($Client, -$Amount, 0, 0, 0, Null, "WALLET", "WALLET", "TRANSFER", $BatchNumber);
-
-         $Client = Client::find($Receiver->IDClient);
-        $BatchNumber = "#TR" . $BalanceTransfer->IDBalanceTransfer;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-          AdjustLedger($Client, $BalanceTransfer->TransferAmount, 0, 0, 0, Null, "WALLET", "WALLET", "TRANSFER", $BatchNumber);
-
-        $Client = Client::find($MainClient);
+        $BatchNumber = GenerateBatch("TR", $BalanceTransfer->IDBalanceTransfer);
+        AdjustLedger($Client, -$Amount, 0, 0, 0, Null, "WALLET: " . $Client->ClientName, "WALLET: " . $Receiver->ClientName, "TRANSFER", $BatchNumber);
+        AdjustLedger($Receiver, $Amount, 0, 0, 0, Null, "WALLET: " . $Receiver->ClientName, "WALLET: " . $Client->ClientName, "TRANSFER", $BatchNumber);
 
         $APICode = APICode::where('IDAPICode', 8)->first();
         $Response = array(
@@ -3249,15 +3234,10 @@ class ClientController extends Controller
             $Event->save();
         }
 
-        $BatchNumber = "#T" . $EventAttendee->IDEventAttendee;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-
-        AdjustLedger($Client, -$Amount, 0, 0, 0, $PlanNetwork, "WALLET", "EVENT", "PAYMENT", $BatchNumber);
+        $BatchNumber = GenerateBatch("#T", $EventAttendee->IDEventAttendee);
+        AdjustLedger($Client, -$Amount, 0, 0, 0, $PlanNetwork, "WALLET: " . $Client->ClientName, "EVENT: " . $Event->EventTitleEn, "PAYMENT", $BatchNumber);
         if ($EventAttendee->EventAttendeeStatus == "PAID") {
-            AdjustLedger($Client, $Amount, $EventPoints, 0, 0, $PlanNetwork, "EVENT", "WALLET", "REWARD", $BatchNumber);
+            AdjustLedger($Client, $Amount, $EventPoints, 0, 0, $PlanNetwork, "EVENT: " . $Event->EventTitleEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
         }
         CompanyLedger(23, $Amount, "Event Payment by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
@@ -3399,13 +3379,9 @@ class ClientController extends Controller
         $ClientTool->save();
 
         $PlanNetwork = PlanNetwork::where("IDClient", $Client->IDClient)->first();
-        $BatchNumber = "#T" . $ClientTool->IDClientTool;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-        AdjustLedger($Client, -$Tool->ToolPrice, 0, 0, 0, $PlanNetwork, "WALLET", "TOOL", "PAYMENT", $BatchNumber);
-        AdjustLedger($Client, $Tool->ToolPrice, $Tool->ToolPoints, 0, 0, $PlanNetwork, "TOOL", "WALLET", "REWARD", $BatchNumber);
+        $BatchNumber = GenerateBatch("T", $ClientTool->IDClientTool);
+        AdjustLedger($Client, -$Tool->ToolPrice, 0, 0, 0, $PlanNetwork, "WALLET: " . $Client->ClientName, "TOOL: " . $Tool->ToolTitleEn, "PAYMENT", $BatchNumber);
+        AdjustLedger($Client, $Tool->ToolPrice, $Tool->ToolPoints, 0, 0, $PlanNetwork, "TOOL: " . $Tool->ToolTitleEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
 
         CompanyLedger(20, $Tool->ToolPrice, "Tool bought by client " . $Client->ClientName, "AUTO", "CREDIT");
 
@@ -3669,9 +3645,10 @@ class ClientController extends Controller
 
         $Client->ClientStatus = "ACTIVE";
         $Client->save();
-        $BatchNumber = generateBatchNumber($PlanNetwork);
-        AdjustLedger($Client, -$PlanProduct->PlanProductPrice, 0, 0, 0, $PlanNetwork, "WALLET", "PLAN_PRODUCT", "PAYMENT", $BatchNumber);
-        AdjustLedger($Client, $PlanProduct->PlanProductPrice, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN_PRODUCT", "WALLET", "REWARD", $BatchNumber);
+
+        $BatchNumber = GenerateBatch("PN", $Client->IDClient);
+        AdjustLedger($Client, -$PlanProduct->PlanProductPrice, 0, 0, 0, $PlanNetwork, "WALLET: " . $Client->ClientName, "PLAN PRODUCT: " . $PlanProduct->PlanProductTitleEn, "PAYMENT", $BatchNumber);
+        AdjustLedger($Client, $PlanProduct->PlanProductPrice, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN PRODUCT: " . $PlanProduct->PlanProductTitleEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
 
         if ($PlanProduct->AgencyNumber == 1)
             CreateOneAgencyClients($Client, $IDPlanProduct, $PlanNetwork);
@@ -3785,8 +3762,8 @@ class ClientController extends Controller
             $Counter++;
         }
 
-        $BatchNumber = generateBatchNumber($PlanNetwork);
-        AdjustLedger($Client, -$PlanProductUpgrade->UpgradePrice, 0, 0, 0, null, "WALLET", "UPGRADE", "PAYMENT", $BatchNumber);
+        $BatchNumber = GenerateBatch("PN", $PlanNetwork->IDPlanNetwork);
+        AdjustLedger($Client, -$PlanProductUpgrade->UpgradePrice, 0, 0, 0, null, "WALLET: " . $Client->ClientName, "UPGRADE: " . $PlanProduct->PlanProductTitleEn, "PAYMENT", $BatchNumber);
 
         CompanyLedger(26, $Amount, "Upgrade Bought by Client " . $Client->ClientName, "AUTO", "CREDIT");
 
@@ -4545,13 +4522,8 @@ class ClientController extends Controller
         $ClientVoucher->VoucherCode = generateUniqueVoucherCodeForClientx($Client->IDClient);
         $ClientVoucher->save();
 
-        $BatchNumber = "#VO" . $Client->IDClient;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
-
-        AdjustLedger($Client, 0, -$VoucherPoints, 0, 0, null, "VOUCHER", "VOUCHER", "PAYMENT", $BatchNumber);
+        $BatchNumber = GenerateBatch("VO", $Client->IDClient);
+        AdjustLedger($Client, 0, -$VoucherPoints, 0, 0, null, "VOUCHER", "VOUCHER", "REWARD", $BatchNumber);
         CompanyLedger(21, $VoucherValue, "Voucher Bought By Client: " . $Client->ClientName, "AUTO", "DEBIT");
 
         $APICode = APICode::where('IDAPICode', 8)->first();

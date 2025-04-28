@@ -290,7 +290,7 @@ class BrandController extends Controller
         $Time = $TimeFormat->format('H');
         $Time = $Time . $TimeFormat->format('i');
         $BatchNumber = $BatchNumber . $Time;
-        AdjustLedger($Client, $ClientBrandProduct->BrandProductPrice, $BrandProduct->BrandProductPoints, 0, 0, Null, "BRAND_PRODUCT", "CASH", "REWARD", $BatchNumber);
+        AdjustLedger($Client, $ClientBrandProduct->BrandProductPrice, $BrandProduct->BrandProductPoints, 0, 0, Null, "BRAND PRODUCT: " . $BrandProduct->BrandProductTitleEn, "CASH: " . $Client->ClientName, "REWARD", $BatchNumber);
 
         $ClientReviews = BrandRating::where("IDClient", $Client->IDClient)->where("IDBrand", $BrandProduct->brand->IDBrand)->get();
 

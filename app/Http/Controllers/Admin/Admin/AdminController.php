@@ -2574,11 +2574,6 @@ class AdminController extends Controller
 
         $Client = Client::find($EventAttendee->IDClient);
         $PlanNetwork = PlanNetwork::where("IDClient", $Client->IDClient)->first();
-        $BatchNumber = "#T" . $EventAttendee->IDEventAttendee;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
         $EventPoints = 0;
         $Amount = $EventAttendee->EventAttendeePaidAmount;
 
@@ -2587,9 +2582,8 @@ class AdminController extends Controller
             $EventPoints = $Event->EventPoints;
         }
 
-        AdjustLedger($Client, $Amount, 0, 0, 0, $PlanNetwork, "EVENT", "WALLET", "CANCELLATION", $BatchNumber);
-        AdjustLedger($Client, 0, -$EventPoints, 0, 0, $PlanNetwork, "WALLET", "EVENT", "CANCELLATION", $BatchNumber);
-
+        $BatchNumber = GenerateBatch("T", $EventAttendee->IDEventAttendee);
+        AdjustLedger($Client, $Amount, -$EventPoints, 0, 0, $PlanNetwork, "EVENT: " . $Event->EventTitleEn, "WALLET: " . $Client->ClientName, "CANCELLATION", $BatchNumber);
         CompanyLedger(21, $Amount, 'Event Cancellation For Client: ' . $Client->ClientName, "MANUAL", "DEBIT");
         $EventAttendee->EventAttendeeStatus = "REMOVED";
         $EventAttendee->save();

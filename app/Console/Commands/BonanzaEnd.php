@@ -164,10 +164,10 @@ class BonanzaEnd extends Command
                 $BatchNumber = $BatchNumber . $Time;
 
                 if ($Bonanza->BonanzaChequeValue > 0) {
-                    ChequesLedger($Client, $Bonanza->BonanzaChequeValue, 'BONANZA',  'WALLET', "REWARD", $BatchNumber);
+                    ChequesLedger($Client, $Bonanza->BonanzaChequeValue, 'BONANZA: ' . $Bonanza->BonanzaTitleEn,  'WALLET: ' . $Client->ClientName, "REWARD", $BatchNumber);
                 }
                 if ($Bonanza->BonanzaRewardPoints > 0) {
-                    AdjustLedger($Client, 0, $Bonanza->BonanzaRewardPoints, 0, 0, Null, "BONANZA", "WALLET", "REWARD", $BatchNumber);
+                    AdjustLedger($Client, 0, $Bonanza->BonanzaRewardPoints, 0, 0, Null, "BONANZA: " . $Bonanza->BonanzaTitleEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
                 }
                 sendFirebaseNotification($Client, $Bonanza, "Congrats you have got the bonanza!", ' ');
 
