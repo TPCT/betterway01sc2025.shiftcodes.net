@@ -572,7 +572,7 @@ class ClientController extends Controller
         $IDClient = $Client->IDClient;
         $IDUpline = $request->IDUpline;
         $IDReferral = $request->IDReferral;
-        $PlanNetworkPosition = $Client->PlanNetworkPosition;
+        $PlanNetworkPosition = $request->PlanNetworkPosition;
 
         if (!$IDUpline && !$IDReferral){
             return RespondWithBadRequest(1);
@@ -583,6 +583,10 @@ class ClientController extends Controller
         $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
 
         if (!$IDReferral && !$ParentClient) {
+            return RespondWithBadRequest(1);
+        }
+
+        if (!$PlanNetworkPosition){
             return RespondWithBadRequest(1);
         }
 
@@ -653,7 +657,8 @@ class ClientController extends Controller
 
         $Client->update([
             'IDReferral' => $IDReferral,
-            'IDUpline' => $IDUpline
+            'IDUpline' => $IDUpline,
+            'NetworkPosition' => $PlanNetworkPosition
         ]);
 
         $PlanNetworkExpireDate = GeneralSettings('PlanNetworkExpireDate');
