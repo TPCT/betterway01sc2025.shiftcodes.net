@@ -563,8 +563,6 @@ class ClientController extends Controller
             return RespondWithBadRequest(1);
         }
 
-
-
         $Client = Client::where(['IDClient' => $request->IDClient, 'ClientStatus' => 'ACTIVE'])->first();
         if (!$Client) {
             return RespondWithBadRequest(10);
@@ -656,7 +654,8 @@ class ClientController extends Controller
             $ParentPlanNetwork, $ParentClient,
             $IDPlanProduct, $Client,
             $PlanNetworkPosition, $PlanNetworkExpireDate,
-            $AgencyNumber, $PlanProduct->AgencyNumber
+            $AgencyNumber, $PlanProduct->AgencyNumber,
+            $IDReferral
         );
 
 
