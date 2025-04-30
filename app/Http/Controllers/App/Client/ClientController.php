@@ -2056,15 +2056,10 @@ class ClientController extends Controller
             $ClientBrandProduct->ClientBrandProductStatus = "PENDING";
         }
         $ClientBrandProduct->ClientBrandProductSerial = $ClientBrandProductSerial;
-        // return $ClientBrandProduct;
 
         $ClientBrandProduct->save();
 
-        $BatchNumber = "#BP" . $ClientBrandProduct->IDClientBrandProduct;
-        $TimeFormat = new DateTime('now');
-        $Time = $TimeFormat->format('H');
-        $Time = $Time . $TimeFormat->format('i');
-        $BatchNumber = $BatchNumber . $Time;
+        $BatchNumber = GenerateBatch("BP", $ClientBrandProduct->IDClientBrandProduct);
         if ($IDPaymentMethod == 1) {
             $Amount = 0;
         }

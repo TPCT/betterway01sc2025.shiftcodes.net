@@ -23,6 +23,7 @@ use App\Http\Resources\ClientContractsResource;
 use App\Http\Resources\ClientPositionLog;
 use App\Http\Resources\PositionsForClients;
 use App\Jobs\SendBonanzaNotifications;
+use App\V1\General\Nationality;
 use App\V1\GhazalCart;
 use App\V1\Brand\Brand;
 use App\V1\Brand\BrandProduct;
@@ -88,57 +89,49 @@ use Mpdf\Mpdf;
 
 class ClientController extends Controller
 {
+    private function determineFlowStatus($Client)
+    {
+        if ($Client->ClientStatus == 'PENDING' || !$Client->ClientNationalID && !$Client->ClientPassport) {
+            $PlanNetwork = PlanNetwork::where('IDClient', $Client->IDClient)->first();
+            return $PlanNetwork ? 'FORM' : 'PRODUCT';
+        }
+
+        return 'HOME';
+    }
+
     public function ClientRegister(Request $request)
     {
-        $Admin = auth('user')->user();
+        $phone = str_replace('+2', '', $request->input('ClientPhone'));
+
+        $this->validate($request, [
+            'ClientPhone' => ['required', 'regex:/^(\+201[0-9]{9}|01[0-9]{9})$/'],
+        ]);
+
+
         if ($request->Filled('ClientAppLanguage')) {
             $ClientAppLanguage = $request->ClientAppLanguage;
         } else {
             $ClientAppLanguage = "ar";
         }
-        if ($request->Filled('ClientGender')) {
-            $ClientGender = $request->ClientGender;
-        } else {
-            $ClientGender = "PRIVATE";
-        }
 
+        Session::put('ClientAppLanguage', $ClientAppLanguage);
+        App::setLocale($ClientAppLanguage);
+
+        $ClientDeviceToken = '';
+        $ClientAppVersion = '';
         $ClientEmail = Null;
-        $ClientPassport = Null;
         $response_code = 200;
-
-        $IDArea = 1;
-        if ($request->Filled('IDArea')) {
-            $IDArea = $request->IDArea;
-        } else {
-            return RespondWithBadRequest(39);
-        }
-        if ($request->Filled('LoginBy')) {
-            $LoginBy = $request->LoginBy;
-        } else {
-            $LoginBy = "MANUAL";
-        }
-
-        $ClientNationalID = null;
-        if ($request->Filled('ClientNationalID')) {
-            $ClientNationalID = $request->ClientNationalID;
-        } else if ($request->Filled('ClientPassport')) {
-            $ClientPassport = $request->ClientPassport;
-        } else {
-            return RespondWithBadRequest(40);
-        }
-        if ($request->Filled('ClientBirthDate')) {
-
-            $ClientBirthDate = $request->ClientBirthDate;
-        } else {
-            return RespondWithBadRequest(41);
-        }
-
-        $IDNationality = 1;
-        if ($request->Filled('IDNationality')) {
-            $IDNationality = $request->IDNationality;
-        } else {
-            return RespondWithBadRequest(43);
-        }
+        $LoginBy = "MANUAL";
+        $ClientDeviceType = "ANDROID";
+        $ClientMobileService = "GMS";
+        $ClientSecondPhone = $request->ClientSecondPhone;
+        $PlanNetworkPosition = "LEFT";
+        $ClientGender = "PRIVATE";
+        $Upline = NULL;
+        $ClientPrivacy = 1;
+        $ClientNationalIDImage = null;
+        $ClientNationalIDImageBack = null;
+        $ClientPassportImage = Null;
 
         if ($request->Filled('ClientEmail')) {
             $ClientEmail = $request->ClientEmail;
@@ -147,55 +140,155 @@ class ClientController extends Controller
                 return RespondWithBadRequest(2);
             }
         }
-
         if ($request->Filled('ClientPhone')) {
-            $ClientPhone = $request->ClientPhone;
+            $ClientPhone = $phone;
         } else {
-
-            return RespondWithBadRequest(51);
+            return RespondWithBadRequest(1);
         }
-
         if ($request->Filled('ClientPhoneFlag')) {
             $ClientPhoneFlag = $request->ClientPhoneFlag;
         } else {
-            return RespondWithBadRequest(52);
+            return RespondWithBadRequest(1);
         }
-
         if ($request->Filled('ClientPassword')) {
             $ClientPassword = $request->ClientPassword;
         } else {
-            return RespondWithBadRequest(53);
+            return RespondWithBadRequest(1);
         }
-
         if ($request->Filled('ClientName')) {
             $ClientName = $request->ClientName;
         } else {
-            return RespondWithBadRequest(54);
+            return RespondWithBadRequest(1);
+        }
+        if ($request->Filled('Referral')) {
+            $Referral = $request->Referral;
+        } else {
+            return RespondWithBadRequest(1);
+        }
+        if ($request->Filled('ClientBirthDate')) {
+            $ClientBirthDate = $request->ClientBirthDate;
+        } else {
+            return RespondWithBadRequest(41);
         }
         if ($request->Filled('ClientNameArabic')) {
             $ClientNameArabic = $request->ClientNameArabic;
         } else {
-
             return RespondWithBadRequest(42);
-        }
-        if ($request->Filled('ClientPassport')) {
-            $ClientPassport = $request->ClientPassport;
-        }
-        if ($request->Filled('ClientIDAddress')) {
-            $ClientIDAddress = $request->ClientIDAddress;
-        } else {
-            return RespondWithBadRequest(45);
         }
         if ($request->Filled('ClientCurrentAddress')) {
             $ClientCurrentAddress = $request->ClientCurrentAddress;
         } else {
             return RespondWithBadRequest(44);
         }
+        if ($request->Filled('ClientIDAddress')) {
+            $ClientIDAddress = $request->ClientIDAddress;
+        } else {
+            return RespondWithBadRequest(45);
+        }
+        if ($request->Filled('IDNationality')) {
+            $IDNationality = $request->IDNationality;
+        } else {
+            return RespondWithBadRequest(43);
+        }
+        if ($request->Filled('IDArea')) {
+            $IDArea = $request->IDArea;
+        } else {
+            return RespondWithBadRequest(39);
+        }
+        if ($request->Filled('ClientNationalID')) {
+            $ClientNationalID = $request->ClientNationalID;
+        } else {
+            return RespondWithBadRequest(40);
+        }
+        if ($request->Filled('ClientPassport')) {
+            $ClientPassport = $request->ClientPassport;
+        } else {
+            return RespondWithBadRequest(40);
+        }
+
+        if ($request->Filled('ClientGender')) {
+            $ClientGender = $request->ClientGender;
+        }
+        if ($request->Filled('Upline')) {
+            $Upline = $request->Upline;
+        }
+        if ($request->Filled('Position')) {
+            $PlanNetworkPosition = $request->Position;
+        }
         if ($request->Filled('ClientPrivacy')) {
             $ClientPrivacy = $request->ClientPrivacy;
-        } else {
-            $ClientPrivacy = 1;
         }
+
+        $ReferralClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Referral) {
+            $query->where('IDClient', $Referral);
+        })->first();
+
+
+        if (!$ReferralClient) {
+            return RespondWithBadRequest(23);
+        }
+
+        $IDReferralClient = $ReferralClient->IDClient;
+
+        $Client = new Client;
+
+        if ($Upline) {
+            $ParentClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Upline) {
+                $query->where('IDClient', $Upline);
+            })->first();
+            $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
+            $IDParentClient = $ParentClient->IDClient;
+            $NameParentClient = $ParentClient->ClientName;
+            $PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath;
+            $PlanNetworkPath = explode("-", $PlanNetworkPath);
+            if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferralClient) {
+                return RespondWithBadRequest(33);
+            }
+
+            $ParentNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)
+                ->where("IDPlanNetwork", "!=", $ParentPlanNetwork->IDPlanNetwork)->count();
+            $ParentPositionNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->count();
+            if ($ParentNetwork == 2) {
+                return RespondWithBadRequest(24);
+            }
+            if ($ParentPositionNetwork == $ParentPlanNetwork->PlanNetworkAgencyNumber) {
+                return RespondWithBadRequest(34);
+            }
+            if (count($PlanNetworkPath) === 3) {
+                $CoPosition = Position::whereRaw('LOWER(`PositionTitleEn`) = ?', ['co'])->first();
+                if ($CoPosition)
+                    $Client->IDPosition = $CoPosition->IDPosition;
+            }
+        }
+
+        if (!$Upline) {
+            $current = $ReferralClient->IDClient;
+            $lastPlanNetwork = PlanNetwork::where("IDClient", $current)->first();
+
+            while (true) {
+                $ParentPlanNetwork = PlanNetwork::where("IDParentClient", $current)
+                    ->where("PlanNetworkPosition", $PlanNetworkPosition)
+                    ->first();
+
+                if ($ParentPlanNetwork) {
+                    $current = $ParentPlanNetwork->IDClient;
+                    $lastPlanNetwork = $ParentPlanNetwork;
+                } else {
+                    break;
+                }
+            }
+            $ParentClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($lastPlanNetwork) {
+                $query->where('IDClient', $lastPlanNetwork->IDClient);
+            })->first();
+            $IDParentClient = $ParentClient->IDClient;
+            $NameParentClient = $ParentClient->ClientName;
+            $PlanNetworkPath = $lastPlanNetwork->PlanNetworkPath;
+            $PlanNetworkPath = explode("-", $PlanNetworkPath);
+            if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferralClient) {
+                return RespondWithBadRequest(33);
+            }
+        }
+
 
         $ClientRecord = Client::where('ClientPhone', $ClientPhone)->where("ClientDeleted", 0)->first();
         if ($ClientRecord) {
@@ -210,122 +303,108 @@ class ClientController extends Controller
         }
 
         $NextIDClient = DB::select('SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE  TABLE_NAME = "clients"')[0]->AUTO_INCREMENT;
+
+        $TimeFormat = new DateTime('now');
+        $Time = $TimeFormat->format('H');
+        $Time = $Time . $TimeFormat->format('i');
+        $ClientAppID = "0" . $NextIDClient . $Time;
+
+        $Client->ClientAppID = $ClientAppID;
+        $Client->ClientEmail = $ClientEmail;
+        $Client->IDNationality = $IDNationality;
+        $Client->IDArea = $IDArea;
+        $Client->IDReferral = $IDReferralClient;
+        $Client->IDUpline = $IDParentClient;
+        $Client->NameUpline = $NameParentClient;
+        $Client->NetworkPosition = $PlanNetworkPosition;
+        $Client->ClientPhone = $ClientPhone;
+        $Client->ClientPhoneFlag = $ClientPhoneFlag;
+        $Client->LoginBy = $LoginBy;
+        $Client->ClientPassword = Hash::make($ClientPassword);
+        $Client->ClientName = $ClientName;
+        $Client->ClientPrivacy = $ClientPrivacy;
+        $Client->ClientDeviceType = $ClientDeviceType;
+        $Client->ClientDeviceToken = $ClientDeviceToken;
+        $Client->ClientAppLanguage = $ClientAppLanguage;
+        $Client->ClientAppVersion = $ClientAppVersion;
+        $Client->ClientMobileService = $ClientMobileService;
+        $Client->VerificationCode = CreateVerificationCode();
+
+        $Client->save();
+
+        $Client->refresh();
+        $IDClient = $Client->IDClient;
         $ImageExtArray = ["jpeg", "jpg", "png", "svg"];
         if ($request->Filled('ClientNationalID')) {
             if ($request->file('ClientNationalIDImage')) {
                 if (!in_array($request->ClientNationalIDImage->extension(), $ImageExtArray)) {
                     return RespondWithBadRequest(15);
                 }
-                $ClientNationalIDImage = SaveImage($request->file('ClientNationalIDImage'), "clients", $NextIDClient);
+                $ClientNationalIDImage = SaveImage($request->file('ClientNationalIDImage'), "clients", $IDClient);
             } else {
-
                 return RespondWithBadRequest(48);
             }
             if ($request->file('ClientNationalIDImageBack')) {
                 if (!in_array($request->ClientNationalIDImageBack->extension(), $ImageExtArray)) {
                     return RespondWithBadRequest(15);
                 }
-                $ClientNationalIDImageBack = SaveImage($request->file('ClientNationalIDImageBack'), "clients", $NextIDClient);
+                $ClientNationalIDImageBack = SaveImage($request->file('ClientNationalIDImageBack'), "clients", $IDClient);
             } else {
                 return RespondWithBadRequest(49);
             }
+
+            $Client->update([
+                "ClientNationalID" => $ClientNationalID
+            ]);
         }
-        $ClientPicture = Null;
-        $ClientPassportImage = Null;
+        if ($request->file('ClientPicture')) {
+            if (!in_array($request->ClientPicture->extension(), $ImageExtArray)) {
+                return RespondWithBadRequest(15);
+            }
+            $ClientPicture = SaveImage($request->file('ClientPicture'), "clients", $IDClient);
+        }
         if ($request->Filled('ClientPassport')) {
             if ($request->file('ClientPassportImage')) {
                 if (!in_array($request->ClientPassportImage->extension(), $ImageExtArray)) {
                     return RespondWithBadRequest(15);
                 }
-                $ClientPassportImage = SaveImage($request->file('ClientPassportImage'), "clients", $NextIDClient);
+                $ClientPassportImage = SaveImage($request->file('ClientPassportImage'), "clients", $IDClient);
             } else {
                 return RespondWithBadRequest(50);
             }
+
+            $Client->update([
+                "ClientPassport" => $ClientPassport,
+            ]);
         }
 
-        if ($request->file('ClientPicture')) {
-            if (!in_array($request->ClientPicture->extension(), $ImageExtArray)) {
-                return RespondWithBadRequest(15);
-            }
-            $ClientPicture = SaveImage($request->file('ClientPicture'), "clients", $NextIDClient);
-        }
+        $Client->update([
+            "IDArea" => $IDArea,
+            "ClientBirthDate" => $ClientBirthDate,
+            "ClientNationalID" => $ClientNationalID,
+            "ClientGender" => $ClientGender,
+            "ClientNameArabic" => $ClientNameArabic,
+            "IDNationality" => $IDNationality,
+            "ClientSecondPhone" => $ClientSecondPhone,
+            "ClientCurrentAddress" => $ClientCurrentAddress,
+            "ClientIDAddress" => $ClientIDAddress,
+            "ClientPicture" => $ClientPicture
+        ]);
 
-        $PlanNetwork = NULL;
-        $IDPreviousClient = $request->IDPreviousClient;
-        if ($IDPreviousClient) {
-            $PreviousClient = Client::find($IDPreviousClient);
-            if (!$PreviousClient) {
-                return RespondWithBadRequest(1);
-            }
-            $PlanNetwork = PlanNetwork::where("IDClient", $IDPreviousClient)->first();
-            if (!$PlanNetwork) {
-                return RespondWithBadRequest(1);
-            }
+        if ($ClientNationalIDImage) {
+            $ClientDocument = new ClientDocument;
+            $ClientDocument->IDClient = $Client->IDClient;
+            $ClientDocument->ClientDocumentPath = $ClientNationalIDImage;
+            $ClientDocument->ClientDocumentType = "NATIONAL_ID";
+            $ClientDocument->save();
         }
-
-        if ($IDPreviousClient) {
-            $ClientAppID = $PreviousClient->ClientAppID;
-        } else {
-            $TimeFormat = new DateTime('now');
-            $Time = $TimeFormat->format('H');
-            $Time = $Time . $TimeFormat->format('i');
-            $ClientAppID = "0" . $NextIDClient . $Time;
+        if ($ClientNationalIDImageBack) {
+            $ClientDocument = new ClientDocument;
+            $ClientDocument->IDClient = $Client->IDClient;
+            $ClientDocument->ClientDocumentPath = $ClientNationalIDImageBack;
+            $ClientDocument->ClientDocumentType = "NATIONAL_ID";
+            $ClientDocument->save();
         }
-
-        $Client = new Client;
-        $Client->IDNationality = $IDNationality;
-        $Client->ClientAppID = $ClientAppID;
-        $Client->ClientEmail = $ClientEmail;
-        $Client->IDArea = $IDArea;
-        $Client->ClientPhone = $ClientPhone;
-        $Client->ClientPhoneFlag = $ClientPhoneFlag;
-        $Client->LoginBy = $LoginBy;
-        if ($LoginBy != "MANUAL") {
-            $Client->ClientSocialUniqueID = $ClientPassword;
-        }
-        $Client->ClientPassword = Hash::make($ClientPassword);
-        $Client->ClientName = $ClientName;
-        $Client->ClientNameArabic = $ClientNameArabic;
-        if ($ClientPrivacy == 0) {
-            $Client->ClientPrivacy = 0;
-        } else {
-            $Client->ClientPrivacy = 1;
-        }
-        $Client->ClientBirthDate = $ClientBirthDate;
-        $Client->ClientNationalID = $ClientNationalID;
-        $Client->ClientAppLanguage = $ClientAppLanguage;
-        $Client->ClientPicture = $ClientPicture;
-        $Client->ClientGender = $ClientGender;
-        $Client->ClientPassport = $ClientPassport;
-        $Client->ClientIDAddress = $ClientIDAddress;
-        $Client->ClientCurrentAddress = $ClientCurrentAddress;
-        $Client->ClientSecondPhone = $request->ClientSecondPhone;
-        $Client->VerificationCode = CreateVerificationCode();
-        if ($IDPreviousClient) {
-            $Client->ClientLeftNumber = $PreviousClient->ClientLeftNumber;
-            $Client->ClientRightNumber = $PreviousClient->ClientRightNumber;
-        }
-        $Client->save();
-
-        if ($ClientNationalID) {
-
-            if ($ClientNationalIDImage) {
-                $ClientDocument = new ClientDocument;
-                $ClientDocument->IDClient = $Client->IDClient;
-                $ClientDocument->ClientDocumentPath = $ClientNationalIDImage;
-                $ClientDocument->ClientDocumentType = "NATIONAL_ID";
-                $ClientDocument->save();
-            }
-
-            if ($ClientNationalIDImageBack) {
-                $ClientDocument = new ClientDocument;
-                $ClientDocument->IDClient = $Client->IDClient;
-                $ClientDocument->ClientDocumentPath = $ClientNationalIDImageBack;
-                $ClientDocument->ClientDocumentType = "NATIONAL_ID";
-                $ClientDocument->save();
-            }
-        }
-
         if ($ClientPassportImage) {
             $ClientDocument = new ClientDocument;
             $ClientDocument->IDClient = $Client->IDClient;
@@ -334,17 +413,13 @@ class ClientController extends Controller
             $ClientDocument->save();
         }
 
+        $Credentials = [
+            'ClientPhone' => $ClientPhone,
+            'ClientDeleted' => 0,
+            'password' => $ClientPassword
+        ];
 
-        $Desc = "Client " . $Client->ClientName . " was added";
-        if ($IDPreviousClient) {
-            $PreviousClient->ClientDeleted = 1;
-            $PreviousClient->save();
-            $PlanNetwork->IDClient = $Client->IDClient;
-            $PlanNetwork->save();
-            $Desc = "Client " . $Client->ClientName . " replaced client " . $PreviousClient->ClientName;
-        }
-
-        ActionBackLog($Admin->IDUser, $Client->IDClient, "ADD_CLIENT", $Desc);
+        $AccessToken = CreateToken($Credentials, 'client')['accessToken'];
 
         $APICode = APICode::where('IDAPICode', 5)->first();
         $response = array(
@@ -358,235 +433,47 @@ class ClientController extends Controller
             'ClientPrivacy' => $Client->ClientPrivacy,
             "IDArea" => $IDArea,
             'ClientBalance' => 0,
-            "ClientGender" => $ClientGender,
-            'ClientStatus' => "INACTIVE"
+            'ClientStatus' => "PENDING",
+            'AccessToken' => $AccessToken,
+            'FLowStatus' => $this->determineFlowStatus($Client)
         );
-        $response_array = array('Success' => true, 'ApiMsg' => trans('apicodes.' . $APICode->IDApiCode), 'ApiCode' => $APICode->IDApiCode, 'Response' => $response);
-        $response = Response::json($response_array, $response_code);
-        return $response;
+        $response_array = array(
+            'Success' => true,
+            'ApiMsg' => trans('apicodes.' . $APICode->IDApiCode),
+            'ApiCode' => $APICode->IDApiCode,
+            'Response' => $response
+        );
+        return Response::json($response_array, $response_code);
     }
-
-    public function test(Request $request)
-    {
-
-        $bon = Bonanza::where('IDBonanza', '17')->with(['bonanza_brands', 'bonanza_brands.brand'])->first();
-
-        return $bon;
-
-
-        // $Referral = $request->Referral;
-
-
-        // if ($request->Filled('Upline')) {
-        //     $Upline = $request->Upline;
-        // } else {
-        //     $Upline = NULL;
-        // }
-
-        // $PlanNetworkPosition = $request->Position;
-
-        // if ($Upline) {
-        //     if ($Upline[0] == "0") {
-        //         $Upline = "+2" . $Upline;
-        //     }
-        // }
-
-
-
-        // if ($Upline) {
-        //     $ParentClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Upline) {
-        //         $query->where('ClientAppID', $Upline)
-        //             ->orwhere('ClientEmail', $Upline)
-        //             ->orwhere('ClientPhone', $Upline);
-        //     })->first();
-
-        //     if (!$ParentClient) {
-
-        //         return RespondWithBadRequest(23);
-        //     }
-        // } else {
-        //     $IDParentClient = Null;
-        // }
-
-        // $ReferralClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Referral) {
-        //     $query->where('ClientAppID', $Referral)
-        //         ->orwhere('ClientEmail', $Referral)
-        //         ->orwhere('ClientPhone', $Referral[0] == "0"
-        //             ? $Referral = "+2" . $Referral : $Referral);
-        // })->first();
-        // // return $ReferralClient;
-        // if (!$ReferralClient) {
-        //     return RespondWithBadRequest(23);
-        // }
-
-        // $IDReferralClient = $ReferralClient->IDClient;
-
-        // // if ($Upline) {
-        // // $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
-        // // $IDParentClient = $ParentClient->IDClient;
-        // // $PlanNetworkPath = $ParentPlanNetwork->PlanNetworkPath;
-        // // $PlanNetworkPath = explode("-", $PlanNetworkPath);
-        // // if (!in_array($ReferralClient->IDClient, $PlanNetworkPath) && $IDParentClient != $IDReferralClient) {
-        // //     return "adf";
-        // // }
-
-        // // $ParentNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->count();
-        // // $ParentPositionNetwork = PlanNetwork::where("IDParentClient", $ParentClient->IDClient)->where("PlanNetworkPosition", $PlanNetworkPosition)->count();
-        // // $ChildNumber = $ParentPlanNetwork->PlanNetworkAgencyNumber * 2;
-        // // if ($ParentNetwork == $ChildNumber) {
-        // //     return RespondWithBadRequest(24);
-        // // }
-        // // if ($ParentPositionNetwork == $ParentPlanNetwork->PlanNetworkAgencyNumber) {
-        // //     return RespondWithBadRequest(34);
-        // // }
-        // // }
-        // $current = $ReferralClient->IDClient;
-        // $lastPlanNetwork = null;
-
-        // while (true) {
-        //     $PlanNetwork = PlanNetwork::where("IDParentClient", $current)
-        //         ->where("PlanNetworkPosition", "RIGHT")
-        //         ->first();
-
-        //     if ($PlanNetwork) {
-        //         $current = $PlanNetwork->IDClient;
-        //         $lastPlanNetwork = $PlanNetwork;
-        //     } else {
-        //         break;
-        //     }
-        // }
-
-        // return $lastPlanNetwork;
-
-
-
-        // $CurrentTime = new DateTime('now');
-        // $CurrentTime = $CurrentTime->format('Y-m-d H:i:s');
-
-        // $Clients = Client::where("ClientStatus", "ACTIVE")->where("ClientDeleted", 0)->get();
-        // $Bonanzas = Bonanza::where('BonanzaStatus', 'ACTIVE')->where("BonanzaEndTime", "<", $CurrentTime)->get();
-        // foreach ($Clients as $Client) {
-        //     $IDClient = $Client->IDClient;
-        //     foreach ($Bonanzas as $Bonanza) {
-        //         $StartDate = $Bonanza->BonanzaStartTime;
-        //         $EndDate = $Bonanza->BonanzaEndTime;
-
-        //         $BonanzaLeftPoints = $Bonanza->BonanzaLeftPoints;
-        //         $BonanzaRightPoints = $Bonanza->BonanzaRightPoints;
-
-        //         if ($BonanzaLeftPoints > 0 && $BonanzaRightPoints > 0) {
-        //             if (!$this->checkBalancePoints($Client, $BonanzaLeftPoints, $BonanzaRightPoints, $StartDate, $EndDate)) {
-        //                 break;
-        //             }
-        //         }
-
-        //         $BonanzaTotalPoints = $Bonanza->BonanzaTotalPoints;
-        //         if ($BonanzaTotalPoints > 0) {
-        //             if (!$this->checkTotalPoints($Client, $BonanzaTotalPoints, $StartDate, $EndDate)) {
-        //                 break;
-        //             }
-        //         }
-
-        //         $BonanzaVisitNumber = $Bonanza->BonanzaVisitNumber;
-
-        //         if ($BonanzaVisitNumber > 0) {
-        //             if (!$this->checkVisitsNumber($Client, $BonanzaVisitNumber, $StartDate, $EndDate)) {
-        //                 break;
-        //             }
-        //         }
-
-        //         $IsBonanzaUniqueVisits = $Bonanza->IsBonanzaUniqueVisits;
-        //         if ($IsBonanzaUniqueVisits) {
-        //             if (!$this->checkUniqueVisits($Client, $Bonanza, $StartDate, $EndDate)) {
-        //                 break;
-        //             }
-        //         }
-
-        //         $BonanzaReferralNumber = $Bonanza->BonanzaReferralNumber;
-        //         if ($BonanzaReferralNumber > 0) {
-        //             if (!$this->checkReferralsNumber($Client, $BonanzaReferralNumber, $StartDate, $EndDate)) {
-        //                 break;
-        //             }
-        //         }
-
-
-        //         $ClientBonanza = new ClientBonanza;
-        //         $ClientBonanza->IDBonanza = $Bonanza->IDBonanza;
-        //         $ClientBonanza->IDClient = $IDClient;
-        //         if ($BonanzaLeftPoints > 0 && $BonanzaRightPoints > 0) {
-        //             $ClientBonanza->ClientLeftPoints =   $this->getFilteredLeftPoints($Client, $StartDate, $EndDate)->sum('ClientLedgerPoints');
-        //             $ClientBonanza->ClientRightPoints = $this->getFilteredRightPoints($Client, $StartDate, $EndDate)->sum('ClientLedgerPoints');
-        //         }
-        //         if ($BonanzaTotalPoints > 0) {
-        //             $ClientBonanza->ClientTotalPoints = $this->getFilteredTotalPoints($Client, $StartDate, $EndDate)->sum('ClientLedgerPoints');
-        //         }
-        //         if ($BonanzaVisitNumber > 0) $ClientBonanza->ClientVisitNumber =  $this->getFilteredVisits($Client, $StartDate, $EndDate)->count();
-        //         if ($BonanzaReferralNumber > 0) $ClientBonanza->BonanzaReferralNumber = $this->getFilteredReferral($Client, $StartDate, $EndDate)->count();
-        //         $ClientBonanza->BrandVisit = 0;
-
-        //         $ClientBonanza->save();
-
-        //         $BatchNumber = "#B" . $ClientBonanza->IDClientBonanza;
-        //         $TimeFormat = new DateTime('now');
-        //         $Time = $TimeFormat->format('H');
-        //         $Time = $Time . $TimeFormat->format('i');
-        //         $BatchNumber = $BatchNumber . $Time;
-
-        //         if ($Bonanza->BonanzaChequeValue > 0) {
-        //             ChequesLedger($Client, $Bonanza->BonanzaChequeValue, 'BONANZA', "REWARD", 'WALLET', $BatchNumber);
-        //         }
-        //         if ($Bonanza->BonanzaRewardPoints > 0) {
-        //             AdjustLedger($Client, 0, $Bonanza->BonanzaRewardPoints, 0, 0, Null, "BONANZA", "WALLET", "REWARD", $BatchNumber);
-        //         }
-        //         $Bonanza->BonanzaStatus = "EXPIRED";
-        //         $Bonanza->save();
-        //         if ($Bonanza->BonanzaChequeValue > 0) {
-        //             $CompanyLedger = new CompanyLedger;
-        //             $CompanyLedger->IDSubCategory = 22;
-        //             $CompanyLedger->CompanyLedgerAmount = $Bonanza->BonanzaChequeValue;
-        //             $CompanyLedger->CompanyLedgerDesc = "Bonanza Payment to Client " . $Client->ClientName;
-        //             $CompanyLedger->CompanyLedgerProcess = "AUTO";
-        //             $CompanyLedger->CompanyLedgerType = "DEBIT";
-        //             $CompanyLedger->save();
-        //         }
-        //     }
-        // }
-    }
-
     public function ClientNetworkAdd(Request $request)
-    {  
-        $Admin = auth('user')->user();
+    {
+        $Client = Client::where('ClientDeleted', 0)->where('IDClient', $request->IDClient)->first();
+        if (!$Client) {
+            return RespondWithBadRequest(10);
+        }
+        if ($Client->ClientStatus == "NOT_VERIFIED") {
+            return RespondWithBadRequest(62);
+        }
+
         $IDPlanProduct = $request->IDPlanProduct;
         $PlanProduct = PlanProduct::where("PlanProductStatus", "ACTIVE")->where("IDPlanProduct", $IDPlanProduct)->first();
 
         if (!$PlanProduct) {
             return RespondWithBadRequest(1);
         }
-
-        $Client = Client::where(['IDClient' => $request->IDClient, 'ClientStatus' => 'ACTIVE'])->first();
-        if (!$Client) {
-            return RespondWithBadRequest(10);
+        if ($PlanProduct->PlanProductPrice > $Client->ClientBalance) {
+            return RespondWithBadRequest(26);
         }
-
 
         $IDClient = $Client->IDClient;
-        $IDUpline = $request->IDUpline;
-        $IDReferral = $request->IDReferral;
-        $PlanNetworkPosition = $request->PlanNetworkPosition;
-
-        if (!$IDUpline && !$IDReferral){
-            return RespondWithBadRequest(1);
-        }
-
+        $IDUpline = $Client->IDUpline;
+        $IDReferral = $Client->IDReferral;
+        $PlanNetworkPosition = $Client->NetworkPosition;
 
         $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
         $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
 
-        if (!$ReferralClient || !$ParentClient) {
-            return RespondWithBadRequest(1);
-        }
-
-        if (!$PlanNetworkPosition){
+        if (!$IDReferral && !$ParentClient) {
             return RespondWithBadRequest(1);
         }
 
@@ -655,12 +542,6 @@ class ClientController extends Controller
             }
         }
 
-        $Client->update([
-            'IDReferral' => $IDReferral,
-            'IDUpline' => $IDUpline,
-            'NetworkPosition' => $PlanNetworkPosition
-        ]);
-
         $PlanNetworkExpireDate = GeneralSettings('PlanNetworkExpireDate');
         $PlanNetworkExpireDate = $PlanNetworkExpireDate * 24 * 60 * 60;
         $Date = new DateTime('now');
@@ -671,8 +552,7 @@ class ClientController extends Controller
             $ParentPlanNetwork, $ParentClient,
             $IDPlanProduct, $Client,
             $PlanNetworkPosition, $PlanNetworkExpireDate,
-            $AgencyNumber, $PlanProduct->AgencyNumber,
-            $IDReferral
+            $AgencyNumber, $PlanProduct->AgencyNumber
         );
 
 
@@ -693,8 +573,9 @@ class ClientController extends Controller
 
         $Client->ClientStatus = "ACTIVE";
         $Client->save();
-        $BatchNumber = GenerateBatch("PN", $PlanNetwork->IDPlanNetwork);
-        AdjustLedger($Client, 0, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN PRODUCT: " . $PlanProduct->PlanProductNameEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
+
+        $BatchNumber = GenerateBatch("PN", $Client->IDClient);
+        AdjustLedger($Client, $PlanProduct->PlanProductPrice, $PlanProduct->PlanProductRewardPoints, 0, 0, $PlanNetwork, "PLAN PRODUCT: " . $PlanProduct->PlanProductTitleEn, "WALLET: " . $Client->ClientName, "REWARD", $BatchNumber);
 
         if ($PlanProduct->AgencyNumber == 1)
             CreateOneAgencyClients($Client, $IDPlanProduct, $PlanNetwork);
@@ -704,6 +585,7 @@ class ClientController extends Controller
             CreateFifthAgencyClients($Client, $IDPlanProduct, $PlanNetwork, $PlanNetworkExpireDate);
 
         return RespondWithSuccessRequest(8);
+
     }
 
     public function ClientList(Request $request, Client $Clients)
