@@ -568,13 +568,13 @@ class ClientController extends Controller
             return RespondWithBadRequest(10);
         }
 
+        var_dump($Client->IDClient);
+        exit;
         $IDClient = $Client->IDClient;
         $IDUpline = $Client->Upline;
         $IDReferral = $Client->Referral;
         $PlanNetworkPosition = $Client->PlanNetworkPosition;
 
-        var_dump($IDClient, $IDUpline, $IDReferral, $PlanNetworkPosition);
-        exit;
         $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
         $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
 
