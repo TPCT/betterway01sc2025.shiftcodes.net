@@ -572,7 +572,7 @@ class ClientController extends Controller
         $IDClient = $Client->IDClient;
         $IDUpline = $request->IDUpline;
         $IDReferral = $request->IDReferral;
-        $PlanNetworkPosition = $request->PlanNetworkPosition;
+        $PlanNetworkPosition = $Client->PlanNetworkPosition;
 
         if (!$IDUpline && !$IDReferral){
             return RespondWithBadRequest(1);
@@ -632,7 +632,7 @@ class ClientController extends Controller
             $PlanNetworkPosition = "LEFT";
             $AgencyNumber = 1;
 
-            $AllNetwork = PlanNetwork::where("PlanNetworkPosition", "LEFT")->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
+            $AllNetwork = PlanNetwork::where("PlanNetworkPosition", $PlanNetworkPosition)->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
                 $query->where("PlanNetworkPath", 'like', $IDReferral . '%')
                     ->orwhere("PlanNetworkPath", 'like', $Key . '%')
                     ->orwhere("PlanNetworkPath", 'like', '%' . $SecondKey . '%')
@@ -642,7 +642,7 @@ class ClientController extends Controller
             if (!count($AllNetwork)) {
                 $ParentPlanNetwork = PlanNetwork::leftjoin("planproducts", "planproducts.IDPlanProduct", "plannetwork.IDPlanProduct")->where("plannetwork.IDClient", $IDReferral)->first();
             } else {
-                $ParentPlanNetwork = PlanNetwork::where("PlanNetworkPosition", "LEFT")->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
+                $ParentPlanNetwork = PlanNetwork::where("PlanNetworkPosition", $PlanNetworkPosition)->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
                     $query->where("PlanNetworkPath", 'like', $IDReferral . '%')
                         ->orwhere("PlanNetworkPath", 'like', $Key . '%')
                         ->orwhere("PlanNetworkPath", 'like', '%' . $SecondKey . '%')
@@ -650,6 +650,11 @@ class ClientController extends Controller
                 })->orderby("ClientLevel", "DESC")->first();
             }
         }
+
+        $Client->update([
+            'IDReferral' => $IDReferral,
+            'IDUpline' => $IDUpline
+        ]);
 
         $PlanNetworkExpireDate = GeneralSettings('PlanNetworkExpireDate');
         $PlanNetworkExpireDate = $PlanNetworkExpireDate * 24 * 60 * 60;

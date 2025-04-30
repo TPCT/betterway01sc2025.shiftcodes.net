@@ -3595,7 +3595,7 @@ class ClientController extends Controller
             $PlanNetworkPosition = "LEFT";
             $AgencyNumber = 1;
 
-            $AllNetwork = PlanNetwork::where("PlanNetworkPosition", "LEFT")->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
+            $AllNetwork = PlanNetwork::where("PlanNetworkPosition", $PlanNetworkPosition)->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
                 $query->where("PlanNetworkPath", 'like', $IDReferral . '%')
                     ->orwhere("PlanNetworkPath", 'like', $Key . '%')
                     ->orwhere("PlanNetworkPath", 'like', '%' . $SecondKey . '%')
@@ -3605,7 +3605,7 @@ class ClientController extends Controller
             if (!count($AllNetwork)) {
                 $ParentPlanNetwork = PlanNetwork::leftjoin("planproducts", "planproducts.IDPlanProduct", "plannetwork.IDPlanProduct")->where("plannetwork.IDClient", $IDReferral)->first();
             } else {
-                $ParentPlanNetwork = PlanNetwork::where("PlanNetworkPosition", "LEFT")->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
+                $ParentPlanNetwork = PlanNetwork::where("PlanNetworkPosition", $PlanNetworkPosition)->where(function ($query) use ($IDReferral, $Key, $SecondKey, $ThirdKey) {
                     $query->where("PlanNetworkPath", 'like', $IDReferral . '%')
                         ->orwhere("PlanNetworkPath", 'like', $Key . '%')
                         ->orwhere("PlanNetworkPath", 'like', '%' . $SecondKey . '%')
