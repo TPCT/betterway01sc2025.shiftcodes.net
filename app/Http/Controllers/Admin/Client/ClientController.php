@@ -563,16 +563,17 @@ class ClientController extends Controller
             return RespondWithBadRequest(1);
         }
 
-        $IDClient = $Client->IDClient;
-        $IDUpline = $Client->Upline;
-        $IDReferral = $Client->Referral;
-        $PlanNetworkPosition = $Client->PlanNetworkPosition;
 
 
         $Client = Client::where(['IDClient' => $request->IDClient, 'ClientStatus' => 'ACTIVE'])->first();
         if (!$Client) {
             return RespondWithBadRequest(10);
         }
+
+        $IDClient = $Client->IDClient;
+        $IDUpline = $Client->Upline;
+        $IDReferral = $Client->Referral;
+        $PlanNetworkPosition = $Client->PlanNetworkPosition;
         $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
         $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
 
