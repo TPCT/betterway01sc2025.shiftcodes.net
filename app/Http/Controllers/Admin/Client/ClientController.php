@@ -572,12 +572,12 @@ class ClientController extends Controller
         $IDClient = $Client->IDClient;
         $IDUpline = $request->IDUpline;
         $IDReferral = $request->IDReferral;
+        $PlanNetworkPosition = $request->PlanNetworkPosition;
 
         if (!$IDUpline && !$IDReferral){
             return RespondWithBadRequest(1);
         }
 
-        $PlanNetworkPosition = $Client->PlanNetworkPosition;
 
         $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
         $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
