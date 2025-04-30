@@ -367,6 +367,9 @@ class ClientController extends Controller
             $ParentClient = Client::where("ClientDeleted", 0)->where(function ($query) use ($Upline) {
                 $query->where('IDClient', $Upline);
             })->first();
+            if (!$ParentClient) {
+                return RespondWithBadRequest(1);
+            }
             $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
             $IDParentClient = $ParentClient->IDClient;
             $NameParentClient = $ParentClient->ClientName;
