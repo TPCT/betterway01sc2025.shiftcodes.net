@@ -584,6 +584,8 @@ class ClientController extends Controller
             return RespondWithBadRequest(25);
         }
 
+        var_dump("hello world");
+        exit;
         if ($ParentClient) {
             $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
             $IDParentClient = $IDUpline;
@@ -644,8 +646,6 @@ class ClientController extends Controller
             }
         }
 
-        var_dump("hello world");
-        exit;
         $PlanNetworkExpireDate = GeneralSettings('PlanNetworkExpireDate');
         $PlanNetworkExpireDate = $PlanNetworkExpireDate * 24 * 60 * 60;
         $Date = new DateTime('now');
