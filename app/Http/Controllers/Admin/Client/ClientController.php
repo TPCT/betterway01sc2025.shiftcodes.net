@@ -644,6 +644,8 @@ class ClientController extends Controller
             }
         }
 
+        var_dump("hello world");
+        exit;
         $PlanNetworkExpireDate = GeneralSettings('PlanNetworkExpireDate');
         $PlanNetworkExpireDate = $PlanNetworkExpireDate * 24 * 60 * 60;
         $Date = new DateTime('now');
