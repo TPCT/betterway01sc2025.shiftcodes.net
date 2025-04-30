@@ -570,8 +570,8 @@ class ClientController extends Controller
 
 
         $IDClient = $Client->IDClient;
-        $IDUpline = $Client->Upline;
-        $IDReferral = $Client->Referral;
+        $IDUpline = $Client->IDUpline;
+        $IDReferral = $Client->IDReferral;
 
         $PlanNetworkPosition = $Client->PlanNetworkPosition;
 
