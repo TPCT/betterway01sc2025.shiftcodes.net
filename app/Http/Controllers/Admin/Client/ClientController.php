@@ -461,9 +461,6 @@ class ClientController extends Controller
         if (!$PlanProduct) {
             return RespondWithBadRequest(1);
         }
-        if ($PlanProduct->PlanProductPrice > $Client->ClientBalance) {
-            return RespondWithBadRequest(26);
-        }
 
         $IDClient = $Client->IDClient;
         $IDUpline = $Client->IDUpline;
