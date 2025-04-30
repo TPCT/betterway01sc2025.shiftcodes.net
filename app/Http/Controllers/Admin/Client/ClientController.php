@@ -563,6 +563,9 @@ class ClientController extends Controller
             return RespondWithBadRequest(1);
         }
 
+        var_dump("hello world");
+        exit;
+
         $Client = Client::where(['IDClient' => $request->IDClient, 'ClientStatus' => 'ACTIVE'])->first();
         if (!$Client) {
             return RespondWithBadRequest(10);
@@ -584,8 +587,6 @@ class ClientController extends Controller
             return RespondWithBadRequest(25);
         }
 
-        var_dump("hello world");
-        exit;
         if ($ParentClient) {
             $ParentPlanNetwork = PlanNetwork::where("IDClient", $ParentClient->IDClient)->first();
             $IDParentClient = $IDUpline;
