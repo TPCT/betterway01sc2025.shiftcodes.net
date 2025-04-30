@@ -573,9 +573,6 @@ class ClientController extends Controller
         $IDUpline = $Client->Upline;
         $IDReferral = $Client->Referral;
 
-        var_dump($Client->IDClient, $IDUpline, $IDReferral);
-        exit;
-
         $PlanNetworkPosition = $Client->PlanNetworkPosition;
 
         $ParentClient = Client::where(['IDClient' => $IDUpline])->first();

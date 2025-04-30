@@ -168,12 +168,12 @@ class Client extends Authenticatable implements JWTSubject
 
     public function referral()
     {
-        return $this->belongsTo(Client::class, 'IDReferralClient', 'IDClient');
+        return $this->belongsTo(Client::class, 'IDReferral', 'IDClient');
     }
 
     public function upline()
     {
-    return $this->belongsTo(Client::class,  'IDClient' ,'IDPlanNetwork');
+    return $this->belongsTo(Client::class,  'IDUpline' ,'IDClient');
     }
 
     
