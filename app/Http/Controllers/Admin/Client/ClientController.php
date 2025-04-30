@@ -582,7 +582,7 @@ class ClientController extends Controller
         $ParentClient = Client::where(['IDClient' => $IDUpline])->first();
         $ReferralClient = Client::where(['IDClient' => $IDReferral])->first();
 
-        if (!$ReferralClient && !$ParentClient) {
+        if (!$ReferralClient || !$ParentClient) {
             return RespondWithBadRequest(1);
         }
 
