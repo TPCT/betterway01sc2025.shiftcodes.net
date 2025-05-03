@@ -26,7 +26,7 @@ class NotificationForClient extends Notification
     public function toDatabase($notifiable)
     {
         return [
-            'data' => $this->message,
+            'data' => $this->data,
         ];
     }
 
