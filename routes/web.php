@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [WebController::class, 'Home'])->name('home');
 Route::get("/test", function(){
     $client = Client::find(153);
-    sendFirebaseNotification($client, null, "hello world", "hello world");
+    sendFirebaseNotification($client, null, "Review", "hello world");
 });
