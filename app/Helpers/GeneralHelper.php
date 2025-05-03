@@ -635,7 +635,7 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
         "body" => $body,
         "data" => $dataPayload,
     ];
-    $Client->notify(new NotificationForClient($data));
+     $Client->notifyNow(new NotificationForClient($data));
 
      try {
          $fcm = $Client->ClientDeviceToken;
