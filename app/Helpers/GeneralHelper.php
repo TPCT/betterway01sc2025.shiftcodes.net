@@ -635,6 +635,8 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
         "body" => $body,
         "data" => $dataPayload,
     ];
+
+    var_dump($data);
      $Client->notifyNow(new NotificationForClient($data));
 
      try {
