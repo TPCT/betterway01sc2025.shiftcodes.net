@@ -705,6 +705,7 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
          Log::info('-------FCM notification sent successfully---------');
      } catch (Exception $e) {
          Log::error('Exception occurred:', ['exception' => $e->getMessage()]);
+         var_dump($e->getMessage());
      }
 
 }
