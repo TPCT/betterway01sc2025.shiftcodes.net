@@ -1180,7 +1180,8 @@ class ClientController extends Controller
             "ClientVideos" => $ClientVideos,
             "CurrentAddress" => $Client->ClientCurrentAddress,
             "ClientLongitude" => $Client->ClientLongitude,
-            "CLientLatitude" => $Client->ClientLatitude,
+            "ClientLatitude" => $Client->ClientLatitude,
+            "ClientCurrentAddress" => $Client->ClientCurrentAddress,
             'AccessToken' => $AccessToken
         );
         $response_array = array('Success' => true, 'ApiMsg' => trans('apicodes.' . $APICode->IDApiCode), 'ApiCode' => $APICode->IDApiCode, 'Response' => $response);
