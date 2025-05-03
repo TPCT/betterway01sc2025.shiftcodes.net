@@ -13,9 +13,8 @@ class NotificationForClient extends Notification
 
     protected $message;
     protected $data;
-    public function __construct($message, $data = [])
+    public function __construct($data = [])
     {
-        $this->message = $message;
         $this->data = $data;
     }
 
@@ -27,7 +26,7 @@ class NotificationForClient extends Notification
     public function toDatabase($notifiable)
     {
         return [
-            'message' => $this->message,
+            'data' => $this->message,
         ];
     }
 
