@@ -687,6 +687,7 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
          $response = curl_exec($ch);
          $err = curl_error($ch);
 
+         var_dump($response);
 
 //         if (!$err){
 //             Notification::create([
