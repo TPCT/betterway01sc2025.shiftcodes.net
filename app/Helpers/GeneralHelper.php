@@ -636,7 +636,6 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
         "data" => $dataPayload,
     ];
 
-    var_dump($data);
      $Client->notifyNow(new NotificationForClient($data));
 
      try {
@@ -689,15 +688,6 @@ function sendFirebaseNotification($Client, $dataPayload, $title, $body)
          $response = curl_exec($ch);
          $err = curl_error($ch);
 
-         var_dump($response);
-
-//         if (!$err){
-//             Notification::create([
-//                 'client_id' => $Client->IDClient,
-//                 'title' => $title,
-//                 'body' => $body,
-//             ]);
-//         }
          Log::debug('FCM response:', ['response' => $response]);
          if ($err) {
              Log::error('cURL error:', ['error' => $err]);
